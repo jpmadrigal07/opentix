@@ -23,7 +23,7 @@
   ],
   "icon": "resources/icon.png",
   "version": "1.0.1",
-  "publisher": "opentix",
+  "publisher": "jpmadrigal07",
   "license": "Apache-2.0",
   "engines": {
     "vscode": "^1.85.0"
