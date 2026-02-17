@@ -6,7 +6,7 @@ import { getUrl } from '@/lib/metadata'
 
 const GITHUB_URL = 'https://github.com/jpmadrigal07/opentix'
 const VSCODE_MARKETPLACE_URL =
-  'https://marketplace.visualstudio.com/items?itemName=opentix.opentix'
+  'https://marketplace.visualstudio.com/items?itemName=jpmadrigal07.opentix'
 
 export const metadata: Metadata = {
   title: 'Opentix - Git-native ticket management for VS Code',

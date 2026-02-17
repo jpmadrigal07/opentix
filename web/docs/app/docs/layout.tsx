@@ -8,7 +8,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { docs } from '@/.velite'
 
 const GITHUB_URL = 'https://github.com/jpmadrigal07/opentix'
-const VSCODE_MARKETPLACE_URL = 'https://marketplace.visualstudio.com/items?itemName=opentix.opentix'
+const VSCODE_MARKETPLACE_URL = 'https://marketplace.visualstudio.com/items?itemName=jpmadrigal07.opentix'
 
 function VSCodeIcon({ className }: { className?: string }) {
   return (
