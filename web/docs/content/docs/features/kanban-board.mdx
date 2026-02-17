@@ -1,0 +1,110 @@
+---
+title: Kanban Board
+slug: features/kanban-board
+description: Visual ticket management with drag-and-drop status transitions inside VS Code.
+section: Features
+order: 1
+---
+
+## Opening the Board
+
+Open the Kanban board with one of these methods:
+
+- **Command Palette**: `Cmd+Shift+P` (or `Ctrl+Shift+P`) then type **"Opentix: Open Board"**
+- **Activity Bar**: Click the Opentix icon in the VS Code sidebar
+
+The board opens as a webview panel inside VS Code.
+
+## Board Layout
+
+The board displays one column per configured status. By default, the columns are:
+
+| Column | Description |
+|---|---|
+| **Backlog** | Tickets not yet started |
+| **In Progress** | Actively being worked on |
+| **Review** | Ready for code review |
+| **Done** | Completed |
+| **Cancelled** | Closed without completion |
+
+You can customize the columns by changing the `statuses` list in [config.yml](/docs/concepts/configuration).
+
+## Ticket Cards
+
+Each ticket appears as a card in its status column showing:
+
+- **Ticket ID** — e.g., `OPTX-0001`
+- **Title** — The ticket title
+- **Priority badge** — Color-coded indicator (low, medium, high, critical)
+- **Assignees** — Names of assigned team members
+- **Sprint label** — The sprint name, if assigned
+
+## Drag and Drop
+
+Move tickets between columns by dragging and dropping cards. When you drop a ticket into a new column:
+
+1. The ticket's `status` field is updated in its Markdown file
+2. The change is auto-committed and pushed
+3. The board re-renders with the updated state
+
+## Creating Tickets
+
+Create a new ticket in two ways:
+
+### From the Board
+
+Click the **"+"** button at the top of any column. A dialog appears with:
+
+- **Title** (required) — The ticket title
+- **Description** (optional) — Initial description text
+- **Priority** — Dropdown: low, medium, high, critical
+- **Assignees** — Multi-select dropdown of team members
+- **Sprint** — Optional dropdown of active sprints (defaults to current sprint if one is active)
+
+### From the Command Palette
+
+Run **`Opentix: Create Ticket`** for a quick input flow that prompts for the ticket title. The ticket is created in the first status column (typically "Backlog").
+
+## Ticket Detail Panel
+
+Click any ticket card to open the detail panel. From here you can:
+
+- **Edit the title** — Click the title to edit inline
+- **Change status** — Use the status dropdown
+- **Set priority** — Use the priority dropdown
+- **Assign team members** — Multi-select dropdown with "Assign to me" shortcut
+- **Assign a sprint** — Dropdown of available sprints
+- **Edit description** — Markdown-supported text area
+- **Edit acceptance criteria** — Markdown-supported text area
+- **Add comments** — Text input at the bottom of the panel
+- **Delete the ticket** — Delete button with confirmation
+
+All changes are saved, committed, and pushed automatically.
+
+## Sprint Filtering
+
+When sprints are configured, the board header displays a **sprint filter dropdown** with options:
+
+- **All Sprints** — Show all tickets regardless of sprint
+- **No Sprint** — Show only tickets not assigned to any sprint
+- **Individual sprints** — Show only tickets in a specific sprint
+
+The filter defaults to the **current sprint** (auto-detected by date). If no sprint is active, it defaults to "All Sprints".
+
+See [Sprint Management](/docs/features/sprint-management) for details on creating and managing sprints.
+
+## Sync Status
+
+The board header shows the current sync status:
+
+- **Synced** — All changes are up to date
+- **Syncing** — A sync operation is in progress
+- **Error** — The last sync failed (click for details)
+
+You can trigger a manual sync with the sync button or the **`Opentix: Sync Tickets`** command.
+
+## Next Steps
+
+- Set up [sprints](/docs/features/sprint-management) for time-boxed work
+- Learn about [team assignees](/docs/features/team-assignees)
+- Configure [auto-sync](/docs/features/sync-collaboration) behavior

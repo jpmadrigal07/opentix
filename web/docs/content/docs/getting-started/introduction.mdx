@@ -1,0 +1,42 @@
+---
+title: Introduction
+slug: getting-started/introduction
+description: What is Opentix and why use it for ticket management.
+section: Getting Started
+order: 1
+---
+
+## What is Opentix?
+
+Opentix is a VS Code extension for **git-native ticket management**. Instead of relying on external tools like Jira, Linear, or GitHub Issues, Opentix stores every ticket as a Markdown file with YAML frontmatter — right inside your repository.
+
+You get a full-featured Kanban board inside VS Code, sprint management, team collaboration through Git, and AI-ready ticket context that works with any coding assistant.
+
+## Key Features
+
+- **Kanban Board** — A drag-and-drop board inside VS Code. Move tickets between columns to change their status.
+- **Markdown Tickets** — Each ticket is a `.md` file with structured YAML frontmatter and Markdown sections for description, acceptance criteria, and comments.
+- **Git-Native Storage** — All ticket data lives in `.opentix/` on your repository's default branch. It syncs through Git — no external server needed.
+- **Worktree Isolation** — Opentix uses a git worktree so your working branch is never affected by ticket operations.
+- **Auto-Sync** — Background pull/push keeps the team in sync automatically.
+- **Sprint Management** — Define sprints and breaks, assign tickets, and filter the board by sprint.
+- **Team & Assignees** — Self-registering team member list. Assign tickets to yourself or teammates.
+- **AI Context** — Automatically detects the current ticket from your branch name and writes context files for AI assistants like Cursor, Copilot, Windsurf, and Claude Code.
+- **Git Automations (Planned)** — A future rule engine to auto-transition ticket status based on branch and pull request events.
+
+## How It Differs
+
+| | Opentix | Jira / Linear | GitHub Issues |
+|---|---|---|---|
+| **Data location** | In the repo | External server | GitHub API |
+| **Offline support** | Full | None | Limited |
+| **Vendor lock-in** | None | High | Medium |
+| **AI integration** | Built-in context files | Requires plugins | Requires setup |
+| **Setup time** | One command | Account + project setup | Per-repo config |
+| **Cost** | Free & open source | Paid plans | Free (limited) |
+
+## Next Steps
+
+- [Install the extension](/docs/getting-started/installation) and set it up in your project
+- Learn about [how Opentix works](/docs/concepts/how-it-works) under the hood
+- Explore the [Kanban board](/docs/features/kanban-board) and start managing tickets

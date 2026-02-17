@@ -1,0 +1,78 @@
+---
+title: Web Kanban Board
+slug: features/web-kanban-board
+description: A standalone web app for viewing and managing your Opentix board from the browser.
+section: Features
+order: 7
+---
+
+<div className="rounded-lg border border-amber-500/50 bg-amber-500/15 dark:bg-amber-500/20 px-6">
+**This feature is not yet implemented**  
+This feature is currently under development. Nothing described on this page works today. The content below documents the planned design for future reference.
+</div>
+
+## Overview
+
+The Web Kanban Board is a standalone web application that lets you view and manage your Opentix tickets from the browser — no VS Code required. It reads and writes the same `.opentix/` data in your repository, so the VS Code extension and the web board stay in sync automatically through Git.
+
+## Getting Started
+
+### Signing In
+
+Visit the Opentix web app and sign in with your GitHub account. This lets the app access your repositories so it can read and write ticket data on your behalf.
+
+### Selecting a Repository
+
+After signing in, you'll be asked to pick a repository. The app only shows repositories that already have Opentix initialized (a `.opentix/` folder on the default branch). If you don't see your repo listed, initialize it first from the VS Code extension using **"Opentix: Initialize Project"**.
+
+Once you select a repo, you're taken straight to the board.
+
+## Using the Board
+
+The web board gives you the same experience as the VS Code Kanban board:
+
+- **Columns by status** — Tickets are organized into columns based on their status (Backlog, In Progress, Review, Done, etc.)
+- **Drag and drop** — Move tickets between columns by dragging them
+- **Create tickets** — Click the create button to add new tickets with a title, description, priority, assignees, and sprint
+- **Edit tickets** — Click any ticket to open its detail panel where you can update fields, add comments, and manage assignments
+- **Delete tickets** — Remove tickets you no longer need
+- **Sprint filtering** — Filter the board by sprint or view all tickets at once
+- **Sprint management** — Create, edit, and delete sprints directly from the board
+- **Team assignees** — Assign team members to tickets using the same team list from your repository
+
+### Switching Repositories
+
+Use the repository switcher in the top bar to change which repository you're viewing. Your selection is remembered for next time.
+
+## How It Stays in Sync
+
+The web board and the VS Code extension are independent — they don't talk to each other directly. Instead, both read and write the same ticket files in your repository's `.opentix/` folder on the default branch. Git is the sync layer.
+
+- Changes you make on the web board are committed to the repository
+- Changes made in VS Code are picked up the next time the web board loads
+- Commit messages follow the same `opentix: ...` convention
+
+You don't need to do anything special to keep them in sync. Just use whichever interface is more convenient at the time.
+
+## What Stays the Same
+
+The web board does not change how Opentix stores data. Everything about the ticket format, folder structure, commit messages, sprint rules, and team configuration remains the same. The web board is simply another way to interact with your existing Opentix data.
+
+## Pricing
+
+The web board is free to use with up to **3 connected repositories**. For more, paid plans are available:
+
+| Plan | Connected Repos | Attachment Storage | Price |
+|---|---|---|---|
+| **Free** | 3 | 500 MB | $0 |
+| **Pro** | 10 | 5 GB | $5/month |
+| **Team** | 20 | 20 GB | $10/month |
+| **Enterprise** | Custom | Custom | Contact us |
+
+Your plan also covers [attachment storage](/docs/features/ticket-attachments) for file uploads on tickets.
+
+## Next Steps
+
+- See the [Kanban Board](/docs/features/kanban-board) page for the VS Code extension board
+- Learn about [sync and collaboration](/docs/features/sync-collaboration) between team members
+- Learn about [ticket attachments](/docs/features/ticket-attachments) for adding files to tickets

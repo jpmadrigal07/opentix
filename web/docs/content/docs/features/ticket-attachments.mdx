@@ -1,0 +1,129 @@
+---
+title: Ticket Attachments
+slug: features/ticket-attachments
+description: Attach files and images to ticket descriptions and comments.
+section: Features
+order: 8
+---
+
+<div className="rounded-lg border border-amber-500/50 bg-amber-500/15 dark:bg-amber-500/20 px-6">
+**This feature is not yet implemented**  
+This feature is currently under development. Nothing described on this page works today. The content below documents the planned design for future reference.
+</div>
+
+## Overview
+
+Ticket attachments let you add files and images directly to ticket descriptions and comments. Drop a screenshot, attach a document, or link a design file — the file is uploaded and a link is inserted automatically, similar to how GitHub handles file uploads.
+
+Attachments work in both the VS Code extension and the [web kanban board](/docs/features/web-kanban-board).
+
+## Adding Attachments
+
+There are two ways to attach files to a ticket:
+
+### Drag and Drop
+
+Drag a file from your computer and drop it onto a description or comment text area. You'll see a visual drop zone appear as you hover. Once you drop the file, it uploads immediately and a Markdown link is inserted at the cursor position.
+
+### Click to Upload
+
+Click the **paperclip icon** next to any description or comment text area to open a file picker. Select a file and it will be uploaded and linked automatically.
+
+### What Happens During Upload
+
+When you attach a file:
+
+1. A placeholder appears in the text area (e.g., `![Uploading screenshot.png...]()`)
+2. The file uploads in the background
+3. Once complete, the placeholder is replaced with the final link
+4. For images, you'll see a preview rendered inline
+
+If the upload fails, the placeholder is removed and an error message appears below the text area.
+
+## Where You Can Add Attachments
+
+Attachments are available in these places:
+
+- **Ticket description** — When creating or editing a ticket
+- **Comments** — When adding a comment to a ticket
+
+## File Limits
+
+- **Maximum file size**: 10 MB per file
+- **Supported types**: Images, documents, PDFs, code files, and most common file types
+
+Files larger than 10 MB are rejected with a clear error message before any upload is attempted.
+
+## Storage Options
+
+Your team can choose where uploaded files are stored. This is configured in your project's `.opentix/config.yml`.
+
+### Opentix Hosted Storage
+
+The simplest option. Files are stored on Opentix servers. To use this:
+
+1. Create a free account on the [Opentix web platform](https://opentix.dev)
+2. Go to **Settings > API Keys** in your dashboard and generate an API key
+3. Set the `OPENTIX_API_KEY` environment variable on your machine
+4. Set the provider to `opentix` in your project config
+
+This option includes **500 MB of free storage** per account. Need more? See the [pricing plans](/docs/features/web-kanban-board#pricing).
+
+### S3-Compatible Storage (Self-Hosted)
+
+For teams that prefer to manage their own storage, Opentix supports any S3-compatible service — AWS S3, Cloudflare R2, DigitalOcean Spaces, MinIO, and others. Your team configures the bucket and credentials in the project config.
+
+## Configuration
+
+Add an `attachments` section to your `.opentix/config.yml`:
+
+```yaml
+attachments:
+  enabled: true
+  provider: opentix   # or "s3" for self-hosted storage
+```
+
+When attachments are not enabled (the default for new projects), the paperclip icon is still visible but clicking it will show a message explaining how to set up attachments.
+
+### Setting Up During Project Init
+
+If you initialize a new Opentix project using the **"Customize settings"** path, you'll be asked whether to enable attachments and which storage provider to use.
+
+## Storage Pricing
+
+Attachment storage is part of your Opentix account plan, shared with the [web kanban board](/docs/features/web-kanban-board). For more, paid plans are available:
+
+| Plan | Connected Repos | Attachment Storage | Price |
+|---|---|---|---|
+| **Free** | 3 | 500 MB | $0 |
+| **Pro** | 10 | 5 GB | $5/month |
+| **Team** | 20 | 20 GB | $10/month |
+| **Enterprise** | Custom | Custom | Contact us |
+
+Your plan also covers [connected repositories](/docs/features/web-kanban-board) for the web kanban board.
+
+If you reach your storage limit, uploads will be blocked until you free up space or upgrade your plan. You'll see a clear error message with a link to manage your account.
+
+## Troubleshooting
+
+### "Attachments are not enabled"
+
+Your project doesn't have attachments configured yet. Ask your team lead to add the `attachments` section to `.opentix/config.yml` and choose a storage provider.
+
+### "Missing API key"
+
+You're using the Opentix hosted storage but haven't set up your API key. [Create a free account](https://opentix.dev) to get one, then set the `OPENTIX_API_KEY` environment variable.
+
+### "Storage limit reached"
+
+Your account has used all available attachment storage. You can upgrade your plan from the Opentix web dashboard, or switch to self-hosted S3 storage for unlimited capacity.
+
+### "File exceeds 10 MB limit"
+
+The file you're trying to attach is too large. Try compressing images or splitting large files before uploading.
+
+## Next Steps
+
+- Set up the [web kanban board](/docs/features/web-kanban-board) for browser-based ticket management
+- Learn about [AI context auto-detection](/docs/features/ai-context) for AI coding assistants
+- See the [Kanban Board](/docs/features/kanban-board) for the full VS Code board experience

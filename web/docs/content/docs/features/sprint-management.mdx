@@ -1,0 +1,94 @@
+---
+title: Sprint Management
+slug: features/sprint-management
+description: Define sprints and breaks, assign tickets, and filter the board by sprint.
+section: Features
+order: 2
+---
+
+## Overview
+
+Opentix supports sprint management for organizing work into time-boxed periods. You can define sprints (work periods) and breaks (gaps between sprints), assign tickets to sprints, and filter the Kanban board to focus on a specific sprint.
+
+## Sprints vs Breaks
+
+| | Sprint | Break |
+|---|---|---|
+| **Purpose** | Work period for tickets | Gap between sprints |
+| **Tickets** | Can be assigned | Cannot be assigned |
+| **Board filter** | Shows in filter dropdown | Not shown in filter |
+| **Current sprint** | Auto-detected by date | Excluded from detection |
+
+## Sprint Data
+
+Sprints are stored in `.opentix/sprints.json` and synced through Git. Each sprint has:
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Auto-generated, immutable (e.g., `SPR-0001`) |
+| `name` | `string` | Display label (e.g., "Sprint 3 - Auth") |
+| `startDate` | `string` | Start date in `YYYY-MM-DD` format |
+| `endDate` | `string` | End date in `YYYY-MM-DD` format |
+| `type` | `string` | Either `sprint` or `break` |
+
+Sprint IDs use the format `SPR-NNNN` (zero-padded 4-digit number) and are auto-generated. They cannot be changed after creation.
+
+## Creating Sprints
+
+Open the **Sprint Manager** from the Kanban board header. To create a new sprint:
+
+1. Click **"Add Sprint"**
+2. Enter a **name** (e.g., "Sprint 3")
+3. Choose a **start date** (pre-filled: day after the last sprint/break ends)
+4. Select a **duration**: 1 week, 2 weeks, 3 weeks, 4 weeks, 5 weeks, or 6 weeks
+5. Choose the **type**: Sprint or Break
+
+The end date is calculated automatically from the start date and duration.
+
+### Validation Rules
+
+- Sprint date ranges **cannot overlap** with existing sprints or breaks
+- Start date must be on or before the end date
+- Name must not be empty
+
+## Editing Sprints
+
+In the Sprint Manager, click a sprint to edit its name or dates. The sprint ID cannot be changed.
+
+## Deleting Sprints
+
+You can delete a sprint only if **no tickets reference it**. If tickets are assigned to the sprint, you must reassign them first (change their sprint to "None" or another sprint).
+
+## Assigning Tickets to Sprints
+
+### When Creating a Ticket
+
+The create ticket dialog includes an optional **Sprint** dropdown. If a current sprint is active, it is pre-selected.
+
+### From the Detail Panel
+
+Click a ticket card and use the **Sprint** dropdown in the detail panel. Options include:
+
+- **None** — Remove sprint assignment
+- Each sprint (by name with date range) — only sprints, not breaks, are listed
+
+## Filtering by Sprint
+
+The Kanban board header includes a sprint filter dropdown:
+
+- **All Sprints** — Show all tickets
+- **No Sprint** — Show tickets without a sprint
+- **Sprint name (dates)** — Show only tickets in that sprint
+
+The filter defaults to the **current sprint** — the sprint whose date range includes today's date (breaks are excluded from this detection). If no sprint covers today, the filter defaults to "All Sprints".
+
+Filtering happens locally in the webview — the extension host sends all ticket data and the board applies the filter client-side.
+
+## Sprint Badge on Cards
+
+When a ticket is assigned to a sprint, a subtle sprint label appears on the ticket card below the ID. This gives a quick visual indicator without cluttering the card.
+
+## Next Steps
+
+- Learn about [team members and assignees](/docs/features/team-assignees)
+- See the full [ticket format](/docs/concepts/ticket-format) including the sprint field

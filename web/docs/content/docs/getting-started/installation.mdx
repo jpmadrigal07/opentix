@@ -1,0 +1,54 @@
+---
+title: Installation
+slug: getting-started/installation
+description: Install the Opentix VS Code extension and verify it's working.
+section: Getting Started
+order: 2
+---
+
+## Prerequisites
+
+Before installing Opentix, make sure you have:
+
+- **VS Code** 1.85 or newer
+- **Git** installed and configured (`git config user.name` and `git config user.email` should be set)
+- A **Git repository** (local or with a remote) to use Opentix in
+
+## Install from VS Code Marketplace
+
+1. Open VS Code
+2. Go to the **Extensions** view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+3. Search for **"Opentix"**
+4. Click **Install**
+
+Alternatively, install from the command line:
+
+```bash
+code --install-extension opentix.opentix
+```
+
+Or visit the [VS Code Marketplace page](https://marketplace.visualstudio.com/items?itemName=opentix.opentix) directly.
+
+## Verify Installation
+
+After installing, open a Git repository in VS Code and open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`). You should see the Opentix commands:
+
+- `Opentix: Initialize Project`
+- `Opentix: Open Board`
+- `Opentix: Create Ticket`
+- `Opentix: Sync Tickets`
+
+If these commands appear, Opentix is installed and ready to use.
+
+## Quick Start
+
+1. Open a Git repository in VS Code
+2. Run **`Opentix: Initialize Project`** from the Command Palette
+3. Choose "Use recommended settings" for a fast setup, or "Customize settings" to configure each option
+4. Run **`Opentix: Open Board`** to see the Kanban board
+5. Create your first ticket with the **"+ New Ticket"** button on the board
+
+## Next Steps
+
+- Learn about the [initialization wizard](/docs/getting-started/project-initialization) and its configuration options
+- Explore the [Kanban board](/docs/features/kanban-board) features

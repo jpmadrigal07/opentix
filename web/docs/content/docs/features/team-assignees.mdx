@@ -1,0 +1,81 @@
+---
+title: Team & Assignees
+slug: features/team-assignees
+description: Self-registering team member list and ticket assignment.
+section: Features
+order: 3
+---
+
+## Overview
+
+Opentix maintains a team member registry that powers the assignee dropdown in the Kanban board. Team members are auto-registered — no manual setup is required.
+
+## Self-Registration
+
+When a developer activates Opentix (opens a project with `.opentix/` initialized), the extension:
+
+1. Reads `git config user.name` and `git config user.email`
+2. Checks `.opentix/team.yml` for an existing entry with that email
+3. If not found, adds the developer to the team list
+4. If found but the name has changed, updates the name
+
+This means the team list grows organically as developers open the project. No invitation flow or manual registration is needed.
+
+## Team File
+
+The team registry is stored in `.opentix/team.yml`:
+
+```yaml
+members:
+  - name: Alice
+    email: alice@example.com
+  - name: Bob
+    email: bob@example.com
+  - name: Charlie
+    email: charlie@example.com
+```
+
+- **Deduplication** — By email (case-insensitive). Each email appears at most once.
+- **Sorting** — Members are sorted alphabetically by name for deterministic Git diffs.
+- **Synced** — The file is committed and pushed like all `.opentix/` files.
+
+## Assigning Tickets
+
+### Multi-Select Dropdown
+
+Both the **create ticket dialog** and the **ticket detail panel** include an assignee dropdown. The dropdown:
+
+- Lists all team members from `team.yml`
+- Supports selecting multiple assignees
+- Shows checkmarks next to currently assigned members
+
+### "Assign to Me" Shortcut
+
+A quick "Assign to me" button adds the current developer (based on `git config user.email`) to the assignee list without opening the full dropdown.
+
+### Default Assignee
+
+You can set `defaultAssignee` in `config.yml` to automatically assign new tickets when no explicit assignees are specified:
+
+```yaml
+defaultAssignee: Alice
+```
+
+Set to `null` (the default) to leave new tickets unassigned.
+
+## How Assignees Are Stored
+
+Assignees are stored as a list of names in the ticket's YAML frontmatter:
+
+```yaml
+assignees:
+  - Alice
+  - Bob
+```
+
+The team member list provides the available options, but the ticket itself stores plain name strings.
+
+## Next Steps
+
+- Set up [AI context auto-detection](/docs/features/ai-context) for coding assistants
+- Learn about the [Kanban board](/docs/features/kanban-board) interface

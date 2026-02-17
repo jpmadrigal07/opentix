@@ -1,0 +1,54 @@
+---
+title: Commands & Settings
+slug: reference/commands
+description: Complete reference of all Opentix VS Code commands and settings.
+section: Reference
+order: 1
+---
+
+## VS Code Commands
+
+All commands are available via the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`).
+
+| Command | Description |
+|---|---|
+| **Opentix: Initialize Project** | Run the onboarding wizard to scaffold `.opentix/` in your repository. Choose recommended defaults or customize each setting. |
+| **Opentix: Open Board** | Open the Kanban board webview panel. Displays all tickets organized by status columns. |
+| **Opentix: Create Ticket** | Quick-create a ticket via input prompts. The ticket is added to the first status column. |
+| **Opentix: Sync Tickets** | Manually pull from the remote and rebuild the ticket index/board state after sync. |
+| **Opentix: Get Ticket Context (AI)** | Display the current ticket's data as structured JSON in the output. Useful for copying ticket context into AI tools. |
+| **Opentix: Get All Tickets Context (AI)** | Display all tickets as a JSON array. Useful for bulk context export. |
+
+## VS Code Settings
+
+Configure Opentix per-developer through VS Code settings (`Cmd+,` / `Ctrl+,`). These override the team-shared `config.yml`.
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `opentix.aiContext.enabled` | `boolean` | `true` | Generate `CURRENT_TICKET.md` with the active ticket context based on the current branch name. Set to `false` to stop auto-generating AI context files. |
+
+### Setting Precedence
+
+VS Code settings take priority over `config.yml` values:
+
+```
+VS Code setting  >  config.yml  >  built-in default
+```
+
+This allows individual developers to override team defaults without modifying the shared configuration.
+
+## Project Configuration (config.yml)
+
+Team-shared configuration lives in `.opentix/config.yml`. See the [Configuration reference](/docs/concepts/configuration) for all fields and their defaults.
+
+## Data Files
+
+| File | Description |
+|---|---|
+| `.opentix/config.yml` | Project configuration (prefix, statuses, sync, etc.) |
+| `.opentix/tickets/*.md` | Individual ticket files (Markdown + YAML frontmatter) |
+| `.opentix/index.json` | Lightweight ticket index for fast board rendering |
+| `.opentix/sprints.json` | Sprint and break definitions |
+| `.opentix/team.yml` | Team member registry (auto-populated) |
+| `.opentix/AGENTS.md` | AI assistant documentation (auto-generated) |
+| `CURRENT_TICKET.md` | Current ticket context for AI tools (gitignored, local) |

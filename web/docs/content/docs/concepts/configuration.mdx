@@ -1,0 +1,98 @@
+---
+title: Configuration
+slug: concepts/configuration
+description: Complete reference for Opentix project configuration in config.yml and VS Code settings.
+section: Core Concepts
+order: 3
+---
+
+## Overview
+
+Opentix configuration lives in `.opentix/config.yml` in your repository. This file is shared with your team through Git. Some settings can be overridden per-developer using VS Code settings.
+
+## config.yml Reference
+
+```yaml
+# Ticket ID prefix (e.g., OPTX-0001)
+prefix: OPTX
+
+# Kanban board columns / ticket statuses
+statuses:
+  - backlog
+  - in-progress
+  - review
+  - done
+  - cancelled
+
+# Default assignee for new tickets (null = no default)
+defaultAssignee: null
+
+# Automatically pull changes from remote
+autoSync: true
+
+# Seconds between background sync pulls
+syncIntervalSeconds: 60
+
+# How changes are pushed to remote
+# "direct" = push immediately after commit
+# "branch-pr" = reserved for future PR-based workflows
+pushMode: direct
+
+# How changes are committed
+# "immediate" = commit after each action
+# "debounce" = batch changes within a time window
+commitStrategy: immediate
+
+# Seconds to wait before committing (only for debounce strategy)
+commitDebounceSeconds: 5
+
+# AI context file generation
+aiContext:
+  enabled: true
+```
+
+## Field Reference
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `prefix` | `string` | `OPTX` | Ticket ID prefix. Must be alphanumeric. |
+| `statuses` | `string[]` | `[backlog, in-progress, review, done, cancelled]` | Ordered list of ticket statuses. Controls Kanban board columns. |
+| `defaultAssignee` | `string \| null` | `null` | Name to auto-assign when creating tickets with no explicit assignees. |
+| `autoSync` | `boolean` | `true` | Enable background sync (periodic pull from remote). |
+| `syncIntervalSeconds` | `number` | `60` | How often to pull from remote, in seconds. |
+| `pushMode` | `string` | `direct` | Push strategy: `direct` or `branch-pr`. |
+| `commitStrategy` | `string` | `immediate` | Commit timing: `immediate` (per action) or `debounce` (batched). |
+| `commitDebounceSeconds` | `number` | `5` | Debounce window in seconds. Only applies when `commitStrategy` is `debounce`. |
+| `defaultBranch` | `string` | Auto-detected | Override the auto-detected default branch name. |
+| `aiContext.enabled` | `boolean` | `true` | Generate `CURRENT_TICKET.md` from the current branch name. |
+
+## VS Code Settings
+
+Some config values can be overridden per-developer using VS Code settings. These overrides take precedence over `config.yml`.
+
+| VS Code Setting | Overrides | Type | Default |
+|---|---|---|---|
+| `opentix.aiContext.enabled` | `aiContext.enabled` | `boolean` | `true` |
+
+### Setting Precedence
+
+When a setting has both a VS Code setting and a `config.yml` value:
+
+```
+VS Code setting  >  config.yml  >  built-in default
+```
+
+This allows individual developers to disable features like AI context generation without affecting the team configuration.
+
+## Modifying Configuration
+
+You can edit `.opentix/config.yml` directly. Changes take effect after the next sync or when the extension reloads. To re-run the configuration wizard:
+
+1. Delete the `.opentix/config.yml` file
+2. Run **`Opentix: Initialize Project`** from the Command Palette
+
+## Next Steps
+
+- Explore the [Kanban board](/docs/features/kanban-board) features
+- Set up [sprint management](/docs/features/sprint-management) for time-boxed work
+- Configure [AI context auto-detection](/docs/features/ai-context)

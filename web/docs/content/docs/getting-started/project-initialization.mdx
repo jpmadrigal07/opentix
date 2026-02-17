@@ -1,0 +1,69 @@
+---
+title: Project Initialization
+slug: getting-started/project-initialization
+description: Set up Opentix in your repository with the initialization wizard.
+section: Getting Started
+order: 3
+---
+
+## Overview
+
+Running **`Opentix: Initialize Project`** from the Command Palette launches an onboarding wizard that scaffolds the `.opentix/` directory in your repository. You only need to run this once per project.
+
+## Two Paths
+
+The wizard offers two options:
+
+### Use Recommended Settings
+
+Select this for instant setup with sensible defaults:
+
+| Setting | Default |
+|---|---|
+| Prefix | `OPTX` |
+| Statuses | `backlog`, `in-progress`, `review`, `done`, `cancelled` |
+| Auto-sync | Enabled |
+| Sync interval | 60 seconds |
+| Push mode | `direct` |
+| Commit strategy | `immediate` |
+| AI context | Enabled |
+
+No further prompts — the project is ready immediately.
+
+### Customize Settings
+
+Select this to walk through each setting individually. Every input is pre-filled with the default value so you can press Enter to accept or type a new value.
+
+**Step-by-step options:**
+
+1. **Ticket prefix** — The prefix for ticket IDs (e.g., `OPTX` produces `OPTX-0001`). Must be alphanumeric.
+2. **Statuses** — Comma-separated list of status columns. Controls the Kanban board layout.
+3. **Auto-sync** — Whether to automatically pull changes in the background.
+4. **Sync interval** — How often to pull (in seconds). Only shown if auto-sync is enabled.
+5. **Push mode** — `direct` pushes immediately on changes. `branch-pr` is reserved for future PR-based workflows.
+6. **Commit strategy** — `immediate` commits after each action. `debounce` batches changes within a configurable window.
+7. **Commit debounce** — Seconds to wait before committing. Only shown if strategy is `debounce`.
+8. **AI context** — Whether to auto-generate `CURRENT_TICKET.md` based on the current branch.
+
+You can cancel at any step by pressing Escape — no changes are made until the wizard completes.
+
+## What Gets Scaffolded
+
+After initialization, your repository will have:
+
+```
+.opentix/
+├── config.yml         # Project configuration
+├── tickets/           # Ticket Markdown files go here
+├── index.json         # Lightweight ticket index for fast board rendering
+├── sprints.json       # Sprint definitions
+├── team.yml           # Auto-populated team member registry
+└── AGENTS.md          # AI context documentation for coding agents
+```
+
+All of these files live on the repository's default branch and are synced through Git.
+
+## Next Steps
+
+- Understand [how the worktree strategy works](/docs/concepts/how-it-works)
+- See the full [configuration reference](/docs/concepts/configuration)

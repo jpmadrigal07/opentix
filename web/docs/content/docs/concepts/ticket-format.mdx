@@ -1,0 +1,119 @@
+---
+title: Ticket Format
+slug: concepts/ticket-format
+description: The structure of Opentix ticket files — YAML frontmatter, Markdown sections, and naming conventions.
+section: Core Concepts
+order: 2
+---
+
+## Overview
+
+Every Opentix ticket is a Markdown file with YAML frontmatter stored in `.opentix/tickets/`. The file name matches the ticket ID (e.g., `OPTX-0001.md`).
+
+## File Structure
+
+A ticket file has three parts:
+
+1. **YAML frontmatter** — Structured metadata between `---` delimiters
+2. **Markdown body** — Description and acceptance criteria sections
+3. **Comments** — Appended as H3 headings at the bottom
+
+## Full Example
+
+```markdown
+---
+id: OPTX-0001
+title: Add user authentication
+status: in-progress
+priority: high
+sprint: SPR-0001
+assignees:
+  - Alice
+  - Bob
+labels:
+  - auth
+  - security
+createdAt: "2025-01-15T10:30:00.000Z"
+updatedAt: "2025-01-16T14:22:00.000Z"
+createdBy: Alice
+branch: feat/OPTX-0001-auth
+linkedCommits:
+  - abc1234
+  - def5678
+---
+
+## Description
+
+Implement JWT-based authentication with login and registration endpoints.
+Users should be able to sign up with email and password, then receive
+a token for subsequent API requests.
+
+## Acceptance Criteria
+
+- [ ] Users can register with email and password
+- [ ] Users can log in and receive a JWT
+- [ ] Protected routes reject unauthenticated requests
+- [ ] Tokens expire after 24 hours
+
+### 2025-01-15T11:00:00.000Z | Alice
+
+Should we support OAuth providers in the first iteration?
+
+### 2025-01-15T14:30:00.000Z | Bob
+
+Let's keep it simple with email/password for now and add OAuth in a follow-up ticket.
+```
+
+## Frontmatter Fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `string` | Yes | Unique ticket ID (e.g., `OPTX-0001`) |
+| `title` | `string` | Yes | Short descriptive title |
+| `status` | `string` | Yes | Current status (must be one of the configured statuses) |
+| `priority` | `string` | Yes | One of: `low`, `medium`, `high`, `critical` |
+| `sprint` | `string` | No | Sprint ID reference (e.g., `SPR-0001`) |
+| `assignees` | `string[]` | Yes | List of assigned team member names |
+| `labels` | `string[]` | Yes | Freeform labels for categorization |
+| `createdAt` | `string` | Yes | ISO 8601 timestamp of creation |
+| `updatedAt` | `string` | Yes | ISO 8601 timestamp of last update |
+| `createdBy` | `string` | Yes | Name of the person who created the ticket |
+| `branch` | `string` | No | Associated git branch name |
+| `linkedCommits` | `string[]` | No | Related commit hashes |
+
+## Markdown Sections
+
+### Description
+
+The `## Description` section contains the main body of the ticket. This is free-form Markdown — you can use lists, code blocks, links, or any standard Markdown syntax.
+
+### Acceptance Criteria
+
+The `## Acceptance Criteria` section is for defining what "done" looks like. Typically written as a checkbox list, but any Markdown format is supported.
+
+### Comments
+
+Comments are appended after the acceptance criteria section. Each comment is an H3 heading with the format:
+
+```markdown
+### <ISO-timestamp> | <Author Name>
+
+Comment body goes here.
+```
+
+Comments are append-only — they are added at the bottom of the file. This design minimizes merge conflicts since multiple team members adding comments will modify different lines.
+
+## Ticket ID Format
+
+Ticket IDs follow the pattern `<PREFIX>-<NNNN>`:
+
+- **Prefix** — Configurable per project (default: `OPTX`). Set during initialization.
+- **Number** — Zero-padded 4-digit auto-incrementing number (e.g., `0001`, `0002`).
+- **Examples**: `OPTX-0001`, `MYAPP-0042`, `PROJ-0100`
+
+The next ID is tracked in `index.json` to ensure uniqueness.
+
+## Next Steps
+
+- See the full [configuration reference](/docs/concepts/configuration) for all project settings
+- Learn about [sprint management](/docs/features/sprint-management) and how tickets reference sprints

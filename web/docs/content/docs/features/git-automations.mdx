@@ -1,0 +1,83 @@
+---
+title: Git Event Automations
+slug: features/git-automations
+description: Automatically transition ticket status based on branch creation and pull request events.
+section: Features
+order: 6
+---
+
+<div className="rounded-lg border border-amber-500/50 bg-amber-500/15 dark:bg-amber-500/20 px-6">
+**This feature is not yet implemented**  
+This feature is currently under development. Nothing described on this page works in the extension today. The content below documents the planned design for future reference.
+</div>
+
+## Overview
+
+Git event automations will support rule-based status transitions driven by Git workflow events (branch creation and PR lifecycle changes), while keeping ticket data in `.opentix/`. **This feature is not yet implemented or shipped.**
+
+## Planned Events
+
+| Event | Trigger | Detection |
+|---|---|---|
+| `branch_created` | A new branch is checked out locally | Watch Git HEAD reference |
+| `pr_opened` | A pull request is opened on GitHub | Poll GitHub state |
+| `pr_merged` | A pull request is merged | Poll GitHub state |
+| `pr_closed` | A pull request is closed without merging | Poll GitHub state |
+
+## Planned Default Rules
+
+Planned defaults:
+
+| Event | Action | Example |
+|---|---|---|
+| Branch created | Set status to `in-progress` | Create `feat/OPTX-0001-auth` -> ticket moves to In Progress |
+| PR opened | Set status to `review` | Open PR for OPTX-0001 -> ticket moves to Review |
+| PR merged | Set status to `done` | Merge PR -> ticket moves to Done |
+| PR closed | Set status to `cancelled` | Close PR without merge -> ticket moves to Cancelled |
+
+Rules are expected to optionally support a `link_branch` action to keep the ticket's `branch` field in sync.
+
+## Planned Configuration
+
+The current extension does **not** scaffold or load automation config yet. The planned design uses:
+
+- `.opentix/config.yml` for global automation enable/interval
+- `.opentix/automations.yml` for rule definitions
+
+```yaml
+automations:
+  enabled: true
+  pollIntervalSeconds: 120
+```
+
+And a rule file like:
+
+```yaml
+version: 1
+rules:
+  - id: branch-to-in-progress
+    trigger: branch_created
+    condition:
+      branch_contains: ticket_id
+    action:
+      set_status: in-progress
+      link_branch: true
+```
+
+## Current Status
+
+Today, status transitions happen through manual board actions (drag/drop or ticket edits). Automation commands/settings are not yet available in `package.json` contributions.
+
+## Roadmap Notes
+
+Planned implementation priorities:
+
+- Rule validation against configured statuses
+- Idempotent transitions (skip if already in target state)
+- Optional `from_status` guards to avoid backward movement
+- GitHub integration via `gh` CLI first, API fallback second
+
+## Next Steps
+
+- Learn about [sync and collaboration](/docs/features/sync-collaboration) for team workflows
+- See the [commands reference](/docs/reference/commands) for all available commands

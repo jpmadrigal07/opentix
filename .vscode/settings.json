@@ -1,0 +1,10 @@
+{
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.removeUnusedImports": "explicit"
+  },
+  "eslint.validate": ["typescript"],
+  "eslint.useFlatConfig": true,
+  "typescript.preferences.quoteStyle": "single"
+}

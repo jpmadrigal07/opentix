@@ -1,0 +1,116 @@
+---
+title: AI Context Auto-Detection
+slug: features/ai-context
+description: Automatic ticket context for AI coding assistants based on your current branch.
+section: Features
+order: 4
+---
+
+## Overview
+
+Opentix automatically detects which ticket you are working on by reading the current Git branch name. It then writes a context file at the workspace root that AI coding assistants can read to understand the ticket you are working on.
+
+This works with **any AI tool** that reads project files — Cursor, GitHub Copilot, Windsurf, Claude Code, and more.
+
+## How It Works
+
+### Branch Name Detection
+
+When you switch branches, Opentix scans the branch name for a pattern matching your configured ticket prefix followed by a 4-digit number:
+
+```
+feat/OPTX-0012-user-auth    → detects OPTX-0012
+bugfix/OPTX-0005-fix-login  → detects OPTX-0005
+OPTX-0001                   → detects OPTX-0001
+my-feature-branch            → no ticket detected
+```
+
+The detection is case-insensitive and uses the prefix from your `config.yml`.
+
+### Context File
+
+When a ticket is detected, Opentix writes `CURRENT_TICKET.md` at the workspace root. This file contains the full ticket context in a structured Markdown format:
+
+- Ticket ID and title
+- Status, priority, and sprint
+- Assignees and labels
+- Full description and acceptance criteria
+- Comments
+
+This file is **gitignored** — it is local to your machine and branch-specific. It is not committed to the repository.
+
+### Three States
+
+The context file always exists when AI context is enabled, but its content depends on what is detected:
+
+| State | Branch Example | Context File Content |
+|---|---|---|
+| **Ticket found** | `feat/OPTX-0012-auth` | Full ticket details |
+| **No ticket in branch** | `my-feature-branch` | "No ticket detected" message |
+| **Ticket ID not found** | `feat/OPTX-9999-missing` | "Ticket not found" message |
+
+### Automatic Updates
+
+The context file updates automatically when:
+
+- The extension activates (on VS Code startup)
+- You switch branches (watches the Git HEAD reference)
+
+No manual action is required. The file persists when VS Code closes.
+
+## AGENTS.md for AI Assistants
+
+When Opentix initializes a project, it generates `.opentix/AGENTS.md` — a documentation file designed for AI coding agents. This file describes:
+
+- The `.opentix/` directory structure
+- Ticket format and conventions
+- How to read and reference tickets
+- The `CURRENT_TICKET.md` file and how to use it
+
+This file is committed to the repository so AI tools working in your codebase can understand the Opentix conventions. It is regenerated each time the project structure is updated to stay in sync with your configuration.
+
+## Configuration
+
+AI context is **enabled by default**. You can disable it at two levels:
+
+### Team Level (config.yml)
+
+```yaml
+aiContext:
+  enabled: false
+```
+
+This disables AI context for everyone on the team (can be overridden per-developer).
+
+### Per-Developer (VS Code Settings)
+
+Open VS Code settings and search for `opentix.aiContext.enabled`, or add to `settings.json`:
+
+```json
+{
+  "opentix.aiContext.enabled": false
+}
+```
+
+### Precedence
+
+```
+VS Code setting  >  config.yml  >  default (true)
+```
+
+A developer can disable AI context for themselves without affecting the team setting, or enable it even if the team default is disabled.
+
+## Auto-Commit of AI-Created Tickets
+
+If an AI agent creates or modifies ticket files directly in `.opentix/tickets/`, Opentix automatically detects the changes, commits them, and pushes to the remote — no manual intervention needed. The new tickets appear on the Kanban board within seconds.
+
+This means AI tools can both **read** ticket context (via `CURRENT_TICKET.md`) and **write** tickets (by creating Markdown files), forming a complete bidirectional workflow. See [Sync & Collaboration — Auto-Commit External Changes](/docs/features/sync-collaboration#auto-commit-external-changes) for details on how this works.
+
+## Detached HEAD
+
+When Git is in a detached HEAD state (e.g., after checking out a specific commit), the branch name resolves to the literal string `HEAD`, which does not match any ticket pattern. The context file will show the "no ticket detected" state.
+
+## Next Steps
+
+- Learn about [Git event automations](/docs/features/git-automations) for auto-transitioning tickets
+- See the [configuration reference](/docs/concepts/configuration) for all settings

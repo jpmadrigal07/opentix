@@ -1,0 +1,125 @@
+---
+title: Development Setup
+slug: contributing/development-setup
+description: Set up the Opentix extension for local development, testing, and debugging.
+section: Contributing
+order: 1
+---
+
+## Prerequisites
+
+- **Bun** (recommended) or **Node.js** 18+
+- **VS Code** 1.85 or newer
+- **Git**
+
+## Clone and Install
+
+```bash
+git clone https://github.com/jpmadrigal07/opentix.git
+cd opentix
+bun install
+```
+
+## Build
+
+Build both the extension host and the Kanban webview:
+
+```bash
+bun run compile:all
+```
+
+Or build them separately:
+
+```bash
+bun run compile          # Extension host only
+bun run compile:webview  # Webview only
+```
+
+## Watch Mode
+
+For development, use watch mode to auto-rebuild on file changes:
+
+```bash
+bun run watch:all
+```
+
+This watches both the extension host and webview source files.
+
+## Launch the Extension Development Host
+
+1. Open the Opentix project folder in VS Code
+2. Press **F5** (or **Run > Start Debugging**)
+3. A second VS Code window opens as the **Extension Development Host**
+
+The Extension Development Host runs the extension from the `dist/` build output. You can test all Opentix features in this window.
+
+## After Changing Code
+
+If you are not using watch mode:
+
+1. Run `bun run compile:all`
+2. In the Extension Development Host: **Cmd+Shift+P** → **Developer: Reload Window**
+
+With watch mode running, you only need to reload the window.
+
+## Running Tests
+
+### Unit Tests
+
+```bash
+bun run test:unit
+```
+
+Unit tests live in `test/unit/` and use Vitest. They cover pure utility functions like ID generation, Markdown parsing, branch name detection, and sprint date logic.
+
+### Integration Tests
+
+```bash
+bun run test:integration
+```
+
+Integration tests use `@vscode/test-electron` to test against the real VS Code API.
+
+### All Tests
+
+```bash
+bun run test
+```
+
+Runs both unit and integration tests sequentially.
+
+## Linting
+
+```bash
+bun run lint
+```
+
+Uses ESLint with TypeScript rules.
+
+## Packaging
+
+To build a `.vsix` package for distribution:
+
+```bash
+bun run package
+```
+
+This runs `vsce package` which bundles the extension for installation.
+
+## Build Scripts Reference
+
+| Script | Description |
+|---|---|
+| `bun run compile` | Build extension host (CJS, Node target) |
+| `bun run compile:webview` | Build webview (IIFE, browser target) |
+| `bun run compile:all` | Build both |
+| `bun run watch:all` | Watch mode for both |
+| `bun run test:unit` | Run unit tests (Vitest) |
+| `bun run test:integration` | Run integration tests (vscode-test-electron) |
+| `bun run test` | Run all tests |
+| `bun run lint` | Lint source files |
+| `bun run package` | Package as .vsix |
+
+## Next Steps
+
+- Read the [architecture overview](/docs/contributing/architecture) to understand the codebase structure

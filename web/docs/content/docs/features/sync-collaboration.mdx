@@ -1,0 +1,149 @@
+---
+title: Sync & Collaboration
+slug: features/sync-collaboration
+description: How Opentix keeps your team in sync through Git with auto-sync, push modes, and conflict resolution.
+section: Features
+order: 5
+---
+
+## Overview
+
+Opentix syncs ticket data through Git. All `.opentix/` files (tickets, index, sprints, team registry) live on the default branch and are committed and pushed like any other file. The sync system runs in the background so your team always sees the latest state.
+
+## Auto-Sync
+
+When `autoSync` is enabled (the default), Opentix periodically pulls changes from the remote:
+
+- **Default interval**: 60 seconds
+- **Configurable**: Set `syncIntervalSeconds` in `config.yml`
+
+```yaml
+autoSync: true
+syncIntervalSeconds: 60
+```
+
+Each sync cycle:
+
+1. Pulls from the remote (with rebase)
+2. Rebuilds the ticket index if any files changed
+3. Sends the updated board state to the webview
+
+## Push Modes
+
+The `pushMode` setting controls when changes are pushed to the remote:
+
+### Direct (Default)
+
+```yaml
+pushMode: direct
+```
+
+Every ticket change is committed and pushed immediately. Your teammates see updates within seconds. This is the simplest and most reliable mode.
+
+### Branch-PR (Future)
+
+```yaml
+pushMode: branch-pr
+```
+
+Reserved for a future workflow where ticket changes are pushed to a separate branch and merged via pull request. Not yet implemented.
+
+## Commit Strategies
+
+The `commitStrategy` setting controls how changes are committed:
+
+### Immediate (Default)
+
+```yaml
+commitStrategy: immediate
+```
+
+Each action (create, update, move, delete) creates a separate commit. This gives a clean, granular commit history:
+
+```
+opentix: create OPTX-0001 - Add user authentication
+opentix: update OPTX-0001 - Change status to in-progress
+opentix: update OPTX-0002 - Assign to Alice
+```
+
+### Debounce
+
+```yaml
+commitStrategy: debounce
+commitDebounceSeconds: 5
+```
+
+Batches rapid changes within a time window into a single commit. Useful if you are making multiple quick edits (e.g., updating several fields on a ticket) and want fewer commits.
+
+## Manual Sync
+
+Trigger a sync at any time:
+
+- **Command Palette**: `Cmd+Shift+P` → **"Opentix: Sync Tickets"**
+- **Board**: Click the sync button in the board header
+
+Manual sync performs a pull and refreshes the board/index regardless of the auto-sync setting. Local ticket changes are pushed when those changes are created (based on your configured push mode).
+
+## Conflict Resolution
+
+When multiple team members edit tickets simultaneously, Git may encounter conflicts. Opentix handles this with a **rebase-retry** strategy:
+
+1. Pull with rebase
+2. If a conflict occurs, retry the operation
+3. Markdown ticket files are designed to minimize conflicts — frontmatter changes are typically on different lines, and comments are append-only
+
+In practice, conflicts are rare because:
+
+- Each ticket is a separate file (different tickets never conflict)
+- Comments are appended at the bottom (concurrent comments don't conflict)
+- Frontmatter updates to different fields affect different lines
+
+## Status Bar Indicator
+
+The VS Code status bar shows the current sync state:
+
+- **Synced** — All changes are up to date with the remote
+- **Syncing** — A sync operation is in progress
+- **Error** — The last sync attempt failed
+
+Click the indicator for more details or to trigger a manual sync.
+
+## Auto-Commit External Changes
+
+When an external tool — an AI coding agent, a script, or a manual file edit — writes files directly into `.opentix/`, Opentix automatically detects, commits, and pushes the changes. No manual intervention is required.
+
+### How It Works
+
+Opentix watches the `.opentix/tickets/` directory for file changes. When a new or modified ticket file is detected:
+
+1. The file watcher triggers an index rebuild (after a 1-second debounce)
+2. Opentix checks for uncommitted files under `.opentix/`
+3. If dirty files are found, they are auto-committed and pushed within ~3 seconds
+
+This means an AI agent can create a ticket by writing a Markdown file to `.opentix/tickets/OPTX-0005.md`, and it will appear on the Kanban board and be pushed to the remote within seconds.
+
+### Safety Net
+
+The file watcher only monitors `*.md` files in the tickets directory. For changes to other `.opentix/` files (e.g., `sprints.json`, `config.yml`), the background sync cycle acts as a safety net:
+
+- Every sync interval (default: 60 seconds), Opentix checks for any uncommitted `.opentix/` changes
+- If found, they are auto-committed and pushed
+
+Between the file watcher (~3 seconds) and the sync safety net (~60 seconds), all external changes are guaranteed to be committed.
+
+### Double-Commit Prevention
+
+When the extension itself creates or updates a ticket, it commits immediately. The file watcher still fires afterward, but Opentix detects that nothing meaningful changed (the files are already committed) and skips the redundant commit. This ensures you never see duplicate `opentix:` commits in your git log.
+
+### Concurrent Operation Safety
+
+Multiple parts of the system can trigger commits — ticket operations, auto-sync, and the external change watcher. Opentix uses a lightweight guard to ensure only one Git operation runs at a time. If a commit is already in progress, any overlapping request is safely skipped and will be picked up on the next cycle.
+
+## Offline / Local-Only Mode
+
+If no remote is configured (e.g., a local-only Git repository), Opentix works normally without syncing. All ticket operations function locally. Sync will activate automatically once a remote is added.
+
+## Next Steps
+
+- See the [commands reference](/docs/reference/commands) for all available commands
+- Learn about the [Kanban board](/docs/features/kanban-board) interface

@@ -1,0 +1,121 @@
+{
+  "name": "opentix",
+  "displayName": "Opentix",
+  "description": "Git-native ticket management with Markdown files and Kanban visualization",
+  "author": "John Patrick Madrigal",
+  "email": "john@zkript.dev",
+  "url": "https://github.com/jpmadrigal07/opentix",
+  "homepage": "https://github.com/jpmadrigal07/opentix",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jpmadrigal07/opentix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jpmadrigal07/opentix/issues"
+  },
+  "keywords": [
+    "vscode",
+    "extension",
+    "git",
+    "ticket",
+    "management",
+    "kanban"
+  ],
+  "icon": "resources/icon.png",
+  "version": "0.1.0",
+  "publisher": "opentix",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "opentix.openBoard",
+        "title": "Opentix: Open Board"
+      },
+      {
+        "command": "opentix.createTicket",
+        "title": "Opentix: Create Ticket"
+      },
+      {
+        "command": "opentix.syncTickets",
+        "title": "Opentix: Sync Tickets"
+      },
+      {
+        "command": "opentix.initProject",
+        "title": "Opentix: Initialize Project"
+      },
+      {
+        "command": "opentix.getTicketContext",
+        "title": "Opentix: Get Ticket Context (AI)"
+      },
+      {
+        "command": "opentix.getAllTicketsContext",
+        "title": "Opentix: Get All Tickets Context (AI)"
+      }
+    ],
+    "configuration": {
+      "title": "Opentix",
+      "properties": {
+        "opentix.aiContext.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically generate CURRENT_TICKET.md with the active ticket context based on the current branch name. Disable to stop auto-generating AI context files."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "opentix",
+          "title": "Opentix",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "compile:webview": "node esbuild.config.mjs --webview",
+    "compile:all": "node esbuild.config.mjs --all",
+    "watch:all": "node esbuild.config.mjs --watch --all",
+    "lint": "eslint src/",
+    "test:unit": "vitest run test/unit/",
+    "test:integration": "vscode-test",
+    "test": "bun run test:unit && bun run test:integration",
+    "package": "vsce package",
+    "vscode:prepublish": "bun run compile:all"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.3",
+    "@semantic-release/release-notes-generator": "^14.0.3",
+    "@types/node": "^25.2.3",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "@vscode/test-electron": "^2.3.8",
+    "conventional-changelog-conventionalcommits": "^9.0.0",
+    "esbuild": "^0.27.3",
+    "eslint": "^9.0.0",
+    "eslint-plugin-check-file": "^3.3.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "semantic-release": "^24.2.6",
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "simple-git": "^3.22.0"
+  }
+}

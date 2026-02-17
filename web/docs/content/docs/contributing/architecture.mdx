@@ -1,0 +1,150 @@
+---
+title: Architecture
+slug: contributing/architecture
+description: Technical architecture overview for contributors — services, message protocol, and build system.
+section: Contributing
+order: 2
+---
+
+## Overview
+
+Opentix is a VS Code extension with two runtime contexts:
+
+- **Extension Host** — Runs in VS Code's Node.js process. Has full access to the file system, Git, and the VS Code API.
+- **Webview** — Runs in an isolated browser context (iframe). Communicates with the host via a typed `postMessage` protocol.
+
+These two contexts are strictly separated. The webview has no access to Node.js APIs, and the host does not import webview code.
+
+## Project Structure
+
+```
+src/
+├── extension.ts              # Entry point (activate/deactivate)
+├── commands/                 # VS Code command handlers
+│   ├── create-ticket.ts
+│   ├── init-project.ts
+│   ├── open-board.ts
+│   └── sync-tickets.ts
+├── models/                   # TypeScript interfaces and types
+│   ├── config.model.ts
+│   ├── sprint.model.ts
+│   └── ticket.model.ts
+├── services/                 # Core business logic
+│   ├── ai.service.ts
+│   ├── branch-watcher.service.ts
+│   ├── git.service.ts
+│   ├── index.service.ts
+│   ├── sprint.service.ts
+│   ├── sync.service.ts
+│   ├── ticket.service.ts
+│   └── watcher.service.ts
+├── utils/                    # Pure utility functions
+│   ├── agents-template.ts
+│   ├── branch-utils.ts
+│   ├── constants.ts
+│   ├── id-generator.ts
+│   └── markdown.ts
+└── webview/                  # Webview UI code
+    ├── kanban-view-provider.ts # Host-side webview manager
+    └── kanban/               # Browser-side code
+        ├── app.ts            # Main app (state, render, events)
+        ├── bridge.ts         # Typed message protocol
+        ├── index.html        # HTML template
+        └── styles/
+            ├── board.css
+            └── theme.css
+```
+
+## Service Dependency Graph
+
+Services are instantiated in `extension.ts` and receive dependencies via constructor injection.
+
+```
+extension.ts (Entry Point)
+├── GitService
+├── TicketService (← GitService)
+├── IndexService (← TicketService, GitService)
+├── SyncService (← GitService, IndexService)
+├── WatcherService (← GitService, IndexService)
+├── SprintService (← GitService, TicketService)
+├── AIService (← TicketService, IndexService)
+├── BranchWatcherService (← GitService)
+└── KanbanViewProvider (← TicketService, IndexService,
+                          SyncService, SprintService, GitService)
+```
+
+### Service Responsibilities
+
+| Service | Responsibility |
+|---|---|
+| **GitService** | Git operations, worktree management, team member registry, commit/push |
+| **TicketService** | Ticket CRUD — create, read, update, delete ticket files |
+| **IndexService** | Maintains `index.json` cache, file watching, emits change events |
+| **SyncService** | Background pull/push on interval |
+| **WatcherService** | File watcher wrapper — detects changes in the ticket directory |
+| **SprintService** | Sprint CRUD, date validation, current sprint detection |
+| **AIService** | Generates `CURRENT_TICKET.md` and ticket context JSON |
+| **BranchWatcherService** | Watches Git HEAD for branch changes, triggers AI context updates |
+| **KanbanViewProvider** | Bridges the webview and services, routes messages |
+
+## Message Protocol
+
+Communication between the extension host and webview uses typed messages defined in `src/webview/kanban/bridge.ts`.
+
+### Host → Webview
+
+| Message | Purpose |
+|---|---|
+| `updateBoard` | Full board state (tickets grouped by status) |
+| `ticketDetail` | Single ticket details for the detail panel |
+| `syncStatus` | Current sync state (syncing, synced, error) |
+| `config` | Configuration data (statuses list) |
+| `sprintConfig` | Sprint list and current sprint ID |
+| `teamMembers` | Team member list and current user identity |
+
+### Webview → Host
+
+| Message | Purpose |
+|---|---|
+| `ready` | Webview loaded and ready to receive data |
+| `createTicket` | Request to create a new ticket |
+| `moveTicket` | Drag-and-drop status change |
+| `openTicket` | Request ticket details |
+| `updateTicket` | Edit ticket fields |
+| `deleteTicket` | Delete a ticket |
+| `addComment` | Add a comment to a ticket |
+| `sync` | Trigger manual sync |
+| `createSprint` | Create a new sprint or break |
+| `updateSprint` | Update sprint name or dates |
+| `deleteSprint` | Delete a sprint |
+
+## Build System
+
+Opentix uses **esbuild** with two separate build targets configured in `esbuild.config.mjs`:
+
+| Target | Format | Platform | Entry | Output |
+|---|---|---|---|---|
+| Extension Host | CommonJS | Node | `src/extension.ts` | `dist/extension.js` |
+| Webview | IIFE | Browser | `src/webview/kanban/app.ts` | `dist/webview/kanban.js` |
+
+The `vscode` module is marked as external — it is provided by VS Code at runtime and not bundled.
+
+Source maps are enabled for both targets to support debugging.
+
+## Testing
+
+| Type | Location | Runner | Coverage |
+|---|---|---|---|
+| Unit tests | `test/unit/` | Vitest | Utilities, parsing, ID generation, sprint logic |
+| Integration tests | `test/integration/` | vscode-test-electron | VS Code API interactions |
+| Fixtures | `test/fixtures/` | — | Sample ticket files for tests |
+
+## Conventions
+
+- **Services**: Classes in `*.service.ts`, constructor injection, `Disposable` pattern
+- **Commands**: Async functions in their own files, receive services as parameters
+- **Models**: Interfaces in `*.model.ts`, no behavior
+- **Utils**: Pure functions, no side effects
+- **Naming**: kebab-case files, PascalCase classes, camelCase functions, UPPER_SNAKE_CASE constants
+
+See the project's `AGENTS.md` for the full coding conventions reference.

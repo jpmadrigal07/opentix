@@ -1,0 +1,90 @@
+---
+title: How It Works
+slug: concepts/how-it-works
+description: Understand the git worktree strategy, data flow, and sync model behind Opentix.
+section: Core Concepts
+order: 1
+---
+
+## Git Worktree Strategy
+
+Opentix stores all ticket data in the `.opentix/` directory on your repository's **default branch** (e.g., `main` or `master`). To avoid polluting your working branch with ticket file changes, Opentix uses a **git worktree**.
+
+### How It Works
+
+- If your workspace is on the **default branch**: Opentix reads and writes directly in the workspace root. No extra worktree is needed.
+- If your workspace is on a **feature branch**: Opentix creates `.opentix-worktree/` — a separate checkout of the default branch — and performs all ticket operations there.
+
+This means your working tree, staged changes, and branch history are never affected by ticket operations. You can create, edit, and move tickets without any interference.
+
+### Default Branch Detection
+
+Opentix auto-detects the default branch using:
+
+```bash
+git symbolic-ref refs/remotes/origin/HEAD
+```
+
+This works with any branch name — `main`, `master`, `trunk`, `develop`, etc. You can also set it explicitly in `config.yml` via the `defaultBranch` field.
+
+## Data Flow
+
+Here is how a typical ticket operation flows through the system:
+
+1. **User action** — You interact with the Kanban board (e.g., drag a ticket to a new column)
+2. **Webview message** — The board sends a typed `postMessage` to the extension host
+3. **Service call** — The `KanbanViewProvider` routes the message to the appropriate service (e.g., `TicketService.updateTicket()`)
+4. **File write** — The service writes the updated Markdown file via `GitService`
+5. **Commit and push** — `GitService` auto-commits with the prefix `opentix:` and pushes to the remote
+6. **File watcher** — The file watcher detects the change and triggers an index rebuild
+7. **Board update** — The rebuilt index is sent back to the webview, which re-renders the board
+
+All of this happens in the background. From your perspective, you drag a card and the board updates.
+
+### External Changes (AI Agents, Scripts, Manual Edits)
+
+When an external tool writes a ticket file directly into `.opentix/tickets/`, the flow is slightly different:
+
+1. **File written** — An external tool creates or modifies a file (e.g., `OPTX-0005.md`)
+2. **File watcher** — Detects the new/changed file and triggers an index rebuild
+3. **Dirty check** — Opentix checks for uncommitted files under `.opentix/`
+4. **Auto-commit** — If dirty files are found, they are committed with an `opentix:` prefix and pushed
+5. **Board update** — The rebuilt index is sent to the webview, which re-renders the board
+
+The entire process takes about 3 seconds. A safety-net check also runs every sync cycle (60 seconds) to catch changes to non-ticket files like `sprints.json` or `config.yml`.
+
+## Auto-Commit Convention
+
+Every change Opentix makes is committed with a consistent prefix:
+
+```
+opentix: create OPTX-0001 - Add user authentication
+opentix: update OPTX-0001 - Change status to in-progress
+opentix: delete OPTX-0003
+```
+
+This makes it easy to identify Opentix commits in your git log and filter them if needed.
+
+## Sync Model
+
+Opentix keeps your team in sync through Git:
+
+- **Background pull** — Periodically pulls changes from the remote (default: every 60 seconds)
+- **Auto-push** — Pushes immediately after each commit (when push mode is `direct`)
+- **Conflict resolution** — Uses rebase with retry on conflict. Markdown ticket files are designed to minimize conflicts.
+
+If no remote is configured, Opentix works in local-only mode — all features work, but changes are not synced.
+
+## Index Cache
+
+For fast board rendering, Opentix maintains a lightweight `index.json` file that contains just the fields needed for ticket cards (ID, title, status, priority, sprint, assignees). This avoids parsing every Markdown file on each board render.
+
+The index is rebuilt automatically when:
+- A ticket file changes (detected by the file watcher)
+- A sync operation pulls new changes
+- You manually trigger a sync
+
+## Next Steps
+
+- Learn about the [ticket file format](/docs/concepts/ticket-format)
+- See all available [configuration options](/docs/concepts/configuration)
