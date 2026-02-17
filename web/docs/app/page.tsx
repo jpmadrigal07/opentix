@@ -88,7 +88,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border px-6 py-6 text-center text-sm text-muted-foreground">
-        Open source under the MIT License.
+        Open source under the Apache License 2.0.
       </footer>
     </div>
   )
