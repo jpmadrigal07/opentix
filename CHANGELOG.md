@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/jpmadrigal07/opentix/compare/v1.3.0...v1.4.0) (2026-02-18)
+
+### ✨ Features
+
+* enhance documentation layout and sidebar with new tooltips and links ([2dd36b3](https://github.com/jpmadrigal07/opentix/commit/2dd36b3c0c6d0d3f92b41e976be3a87207603ecc))
+
 ## [1.3.0](https://github.com/jpmadrigal07/opentix/compare/v1.2.0...v1.3.0) (2026-02-18)
 
 ### ✨ Features
