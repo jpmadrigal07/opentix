@@ -12,7 +12,7 @@ const VSCODE_MARKETPLACE_URL =
 const VSX_REGISTRY_URL =
   'https://open-vsx.org/extension/jpmadrigal07/opentix'
 const BUYMEACOFFEE_URL = 'https://www.buymeacoffee.com/jpmadrigal07'
-const DISCORD_WIDGET_URL = 'https://discord.com/widget?id=1473807870352035880'
+const DISCORD_WIDGET_URL = 'https://discord.gg/YnfyFzqr'
 
 export const metadata: Metadata = {
   title: 'Opentix - Git-native ticket management for modern IDEs',
