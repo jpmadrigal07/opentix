@@ -24,6 +24,73 @@ let kanbanProvider: KanbanViewProvider;
 let aiService: AIService;
 let branchWatcher: BranchWatcherService | null = null;
 let statusBarItem: vscode.StatusBarItem;
+let extensionContext: vscode.ExtensionContext;
+let servicesStarted = false;
+
+/**
+ * Start the core Opentix services (worktree, watcher, sync, AI context).
+ * Guarded by a flag so it only runs once -- called either during activation
+ * (if the project was already initialized) or after the init-project command.
+ */
+async function startServices(): Promise<void> {
+  if (servicesStarted) { return; }
+  servicesStarted = true;
+
+  await gitService.ensureWorktree();
+  await gitService.ensureOpentixStructure();
+
+  try {
+    await gitService.ensureTeamMember();
+  } catch (teamErr: unknown) {
+    console.log(`Opentix: Could not register team member (${teamErr instanceof Error ? teamErr.message : String(teamErr)})`);
+  }
+
+  watcherService.start();
+  await indexService.rebuild();
+
+  if (await gitService.hasRemote()) {
+    syncService.startAutoSync(DEFAULT_SYNC_INTERVAL_SECONDS);
+  }
+
+  // AI context auto-detection (guarded by config)
+  // Precedence: VS Code user setting (if explicitly set) > config.yml > default (true)
+  const config = await gitService.readConfig();
+  const vscodeSetting = vscode.workspace.getConfiguration('opentix').inspect<boolean>('aiContext.enabled');
+  const userExplicitlySet = vscodeSetting?.globalValue !== undefined
+    || vscodeSetting?.workspaceValue !== undefined
+    || vscodeSetting?.workspaceFolderValue !== undefined;
+  const aiContextEnabled = userExplicitlySet
+    ? vscode.workspace.getConfiguration('opentix').get<boolean>('aiContext.enabled', true)
+    : (config.aiContext?.enabled ?? true);
+
+  if (aiContextEnabled) {
+    branchWatcher = new BranchWatcherService(gitService, config.prefix);
+    branchWatcher.onBranchChanged(async ({ branchName, ticketId }) => {
+      await aiService.generateCurrentTicketContext(branchName, ticketId);
+    });
+    await branchWatcher.start();
+
+    const currentBranch = await gitService.getCurrentBranch();
+    const ticketId = gitService.extractTicketIdFromBranch(currentBranch, config.prefix);
+    await aiService.generateCurrentTicketContext(currentBranch, ticketId);
+
+    extensionContext.subscriptions.push({ dispose: () => branchWatcher?.dispose() });
+  }
+
+  statusBarItem.text = '$(kanban) Opentix';
+  statusBarItem.tooltip = 'Open Opentix Board';
+  statusBarItem.command = 'opentix.openBoard';
+  statusBarItem.show();
+
+  console.log('Opentix: Extension activated successfully.');
+}
+
+function showUninitializedStatusBar(): void {
+  statusBarItem.text = '$(kanban) Opentix (init)';
+  statusBarItem.tooltip = 'Click to initialize Opentix';
+  statusBarItem.command = 'opentix.initProject';
+  statusBarItem.show();
+}
 
 export async function activate(
   context: vscode.ExtensionContext,
@@ -34,6 +101,7 @@ export async function activate(
   }
 
   const workspaceRoot = workspaceFolders[0].uri.fsPath;
+  extensionContext = context;
 
   // Initialize services
   gitService = new GitService(workspaceRoot);
@@ -111,9 +179,12 @@ export async function activate(
     vscode.commands.registerCommand('opentix.syncTickets', () =>
       syncTicketsCommand(syncService),
     ),
-    vscode.commands.registerCommand('opentix.initProject', () =>
-      initProjectCommand(gitService),
-    ),
+    vscode.commands.registerCommand('opentix.initProject', async () => {
+      const success = await initProjectCommand(gitService);
+      if (success) {
+        await startServices();
+      }
+    }),
     vscode.commands.registerCommand('opentix.getTicketContext', async () => {
       const id = await vscode.window.showInputBox({
         prompt: 'Ticket ID',
@@ -154,67 +225,20 @@ export async function activate(
     { dispose: () => kanbanProvider.dispose() },
   );
 
-  // Try to initialize the worktree and start services
+  // Only start services if the project was explicitly initialized.
+  // Otherwise, show a status bar prompt and wait for the user to run init.
+  const initialized = await gitService.isInitialized();
+  if (!initialized) {
+    showUninitializedStatusBar();
+    return;
+  }
+
   try {
-    await gitService.ensureWorktree();
-    await gitService.ensureOpentixStructure();
-
-    // Auto-register current developer in team.yml
-    try {
-      await gitService.ensureTeamMember();
-    } catch (teamErr: unknown) {
-      console.log(`Opentix: Could not register team member (${teamErr instanceof Error ? teamErr.message : String(teamErr)})`);
-    }
-
-    // Start file watcher
-    watcherService.start();
-
-    // Load initial index
-    await indexService.rebuild();
-
-    // Start auto-sync if remote is available
-    if (await gitService.hasRemote()) {
-      syncService.startAutoSync(DEFAULT_SYNC_INTERVAL_SECONDS);
-    }
-
-    // AI context auto-detection (guarded by config)
-    // Precedence: VS Code user setting (if explicitly set) > config.yml > default (true)
-    const config = await gitService.readConfig();
-    const vscodeSetting = vscode.workspace.getConfiguration('opentix').inspect<boolean>('aiContext.enabled');
-    const userExplicitlySet = vscodeSetting?.globalValue !== undefined
-      || vscodeSetting?.workspaceValue !== undefined
-      || vscodeSetting?.workspaceFolderValue !== undefined;
-    const aiContextEnabled = userExplicitlySet
-      ? vscode.workspace.getConfiguration('opentix').get<boolean>('aiContext.enabled', true)
-      : (config.aiContext?.enabled ?? true);
-
-    if (aiContextEnabled) {
-      branchWatcher = new BranchWatcherService(gitService, config.prefix);
-      branchWatcher.onBranchChanged(async ({ branchName, ticketId }) => {
-        await aiService.generateCurrentTicketContext(branchName, ticketId);
-      });
-      await branchWatcher.start();
-
-      // Generate initial context for current branch
-      const currentBranch = await gitService.getCurrentBranch();
-      const ticketId = gitService.extractTicketIdFromBranch(currentBranch, config.prefix);
-      await aiService.generateCurrentTicketContext(currentBranch, ticketId);
-
-      context.subscriptions.push({ dispose: () => branchWatcher?.dispose() });
-    }
-
-    // Show status bar
-    statusBarItem.show();
-
-    console.log('Opentix: Extension activated successfully.');
+    await startServices();
   } catch (err: unknown) {
-    // Extension activation is not critical -- the user can init manually
     const errMsg = err instanceof Error ? err.message : String(err);
     console.log(`Opentix: Deferred initialization (${errMsg}). Use "Opentix: Initialize Project" to set up.`);
-    statusBarItem.text = '$(kanban) Opentix (init)';
-    statusBarItem.tooltip = 'Click to initialize Opentix';
-    statusBarItem.command = 'opentix.initProject';
-    statusBarItem.show();
+    showUninitializedStatusBar();
   }
 }
 

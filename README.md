@@ -1,14 +1,24 @@
 # Opentix
 
-Git-native ticket management for VS Code. Store tickets as Markdown files, visualize them on a Kanban board, and sync everything through Git.
+Git-native ticket management for Agentic Coders. Store tickets as Markdown files in your repository. Visualize them on a Kanban board, manage sprints, auto-sync with your team, and give AI assistants full ticket context — all without leaving your editor.
 
 ## Features
 
-- **Kanban Board** -- Visual board inside VS Code with drag-and-drop status transitions
-- **Markdown Tickets** -- Each ticket is a structured Markdown file with YAML frontmatter
-- **Git-Native** -- All data lives in your repository on the default branch
-- **Auto-Sync** -- Background pull/push keeps the team in sync
-- **AI-Ready** -- Ticket context is accessible to AI tools via commands and Cursor Rules
+- **Kanban Board** — A drag-and-drop board inside VS Code. Move tickets between columns to change their status. Create, edit, and delete tickets directly from the board.
+- **Markdown Tickets** — Each ticket is a .md file with structured YAML frontmatter and Markdown sections for description, acceptance criteria, and comments. All ticket data lives in .opentix/ on your repository's default branch.
+- **Git-Native Storage** — All ticket data syncs through Git — no external server needed. Opentix uses a git worktree so your working branch is never affected by ticket operations.
+- **Sprint Management** — Define sprints and breaks, assign tickets to sprints, and filter the board by sprint. Auto-detects the current sprint based on date.
+- **Team & Assignees** — Self-registering team member list. Team members are automatically added from Git config. Assign tickets to yourself or teammates with multi-select support.
+- **AI Context Auto-Detection** — Automatically detects the current ticket from your branch name (e.g., feat/OPTX-0012-auth) and writes CURRENT_TICKET.md at the workspace root for AI assistants like Cursor, Copilot, Windsurf, and Claude Code.
+- **Sync & Collaboration** — Background pull/push keeps the team in sync automatically (60-second interval). Auto-commits external changes from AI agents and scripts. Supports immediate and debounced commit strategies.
+
+### Coming Soon
+
+- **CLI** — Standalone command-line interface for AI agents and scripts to manage tickets and create full automation of creating tickets and finishing them.
+- **Web Kanban Board** — View and manage your Opentix board from the browser — no IDE required. This can be use by non-developers to see the latest state of the tickets and interact with it.
+- **Git Event Automations** — Rule engine to auto-transition ticket status based on branch and pull request events.
+- **Ticket Attachments** — Attach files and images to ticket descriptions and comments.
+- **Managed Backend Support** — Hosted sync infrastructure option while keeping the same git-native workflow.
 
 ## Quick Start
 

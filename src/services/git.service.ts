@@ -175,6 +175,30 @@ export class GitService {
   }
 
   /**
+   * Check whether the project has been explicitly initialized with Opentix.
+   * Looks for config.yml on the local filesystem (default-branch checkout)
+   * and via git plumbing (feature-branch checkout) to avoid creating a worktree.
+   */
+  async isInitialized(): Promise<boolean> {
+    try {
+      await fs.access(path.join(this.workspaceRoot, OPENTIX_DIR, CONFIG_FILE));
+      return true;
+    } catch {
+      // Not on filesystem -- check the default branch via git plumbing
+    }
+
+    try {
+      const defaultBranch = await this.detectDefaultBranch();
+      await this.repoGit.raw([
+        'cat-file', '-e', `${defaultBranch}:${OPENTIX_DIR}/${CONFIG_FILE}`,
+      ]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Ensure the worktree exists and is checked out to the default branch.
    * If the workspace is already on the default branch, we use the workspace root
    * instead of creating a second worktree (Git does not allow the same branch

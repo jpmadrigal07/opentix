@@ -55,6 +55,15 @@ src/
             └── theme.css
 ```
 
+## Activation Flow
+
+The extension uses a two-path activation gated by `GitService.isInitialized()`:
+
+- **Not initialized** — Services are created and commands are registered, but no `.opentix/` files are written and no background services start. The status bar shows "Opentix (init)".
+- **Already initialized** — The `startServices()` function runs, which sets up the worktree, ensures the `.opentix/` structure is current, and starts the watcher, index, sync, and AI context services.
+
+After `initProjectCommand` completes successfully (returns `true`), the command handler in `extension.ts` calls `startServices()` to bring the extension online without requiring a reload. A `servicesStarted` flag prevents double-initialization.
+
 ## Service Dependency Graph
 
 Services are instantiated in `extension.ts` and receive dependencies via constructor injection.

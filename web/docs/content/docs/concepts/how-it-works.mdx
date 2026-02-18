@@ -6,6 +6,12 @@ section: Core Concepts
 order: 1
 ---
 
+## Activation
+
+When VS Code opens a workspace, Opentix checks whether the project has been explicitly initialized by looking for `.opentix/config.yml` (on the filesystem or via git plumbing on the default branch). If the config file is not found, the extension stays idle — no files are created and no background services are started. The status bar shows **"Opentix (init)"** and clicking it opens the [initialization wizard](/docs/getting-started/project-initialization).
+
+Once a project has been initialized, the extension starts all background services (file watcher, sync, AI context) automatically on every subsequent open.
+
 ## Git Worktree Strategy
 
 Opentix stores all ticket data in the `.opentix/` directory on your repository's **default branch** (e.g., `main` or `master`). To avoid polluting your working branch with ticket file changes, Opentix uses a **git worktree**.

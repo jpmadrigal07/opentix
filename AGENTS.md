@@ -206,6 +206,15 @@ opentix/
 
 ## Architecture
 
+### Activation Flow
+
+The extension uses a **two-path activation** gated by `GitService.isInitialized()` (checks for `.opentix/config.yml` on the filesystem or via git plumbing on the default branch):
+
+- **Not initialized**: Services are created and commands registered, but no `.opentix/` files are created. The status bar shows "Opentix (init)" and links to the init command. The user must explicitly run "Opentix: Initialize Project" to scaffold the `.opentix/` directory.
+- **Already initialized**: The `startServices()` function runs -- sets up the worktree, ensures structure is current, starts the watcher, index, sync, and AI context services.
+
+After `initProjectCommand` succeeds, it returns `true` and the command handler in `extension.ts` calls `startServices()` to bring the extension fully online. A `servicesStarted` flag prevents double-initialization.
+
 ### Service Dependency Graph
 
 ```
@@ -528,7 +537,7 @@ feat!: redesign ticket frontmatter schema
 3. **USE** VS Code `StatusBarItem` for user-facing status indicators
 4. **USE** `vscode.window.showInputBox()` and `showQuickPick()` for user input
 5. **FOLLOW** the `activate()` / `deactivate()` lifecycle pattern
-6. **GUARD** activation with workspace and git repo checks before initializing services
+6. **GUARD** activation with workspace, git repo, and `isInitialized()` checks before starting services
 
 ### Build System
 

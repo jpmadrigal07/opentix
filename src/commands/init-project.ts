@@ -162,17 +162,18 @@ async function runCustomizeWizard(): Promise<OpentixConfig | undefined> {
 /**
  * Command handler for opentix.initProject.
  * Shows an onboarding wizard and initializes the Opentix structure in the current workspace.
+ * Returns `true` if initialization succeeded so the caller can start services.
  */
 export async function initProjectCommand(
   gitService: GitService,
-): Promise<void> {
+): Promise<boolean> {
   try {
     const isRepo = await gitService.isGitRepo();
     if (!isRepo) {
       vscode.window.showErrorMessage(
         'Opentix: This folder is not a git repository. Please initialize git first.',
       );
-      return;
+      return false;
     }
 
     // Step 0: Choose setup mode
@@ -196,14 +197,14 @@ export async function initProjectCommand(
     );
 
     if (!setupMode) {
-      return; // User cancelled
+      return false;
     }
 
     let config: OpentixConfig | undefined;
     if (setupMode.id === 'customize') {
       config = await runCustomizeWizard();
       if (config === undefined) {
-        return; // User cancelled during wizard
+        return false;
       }
     }
 
@@ -216,10 +217,12 @@ export async function initProjectCommand(
     vscode.window.showInformationMessage(
       'Opentix: Project initialized! Open the Kanban board with "Opentix: Open Board".',
     );
+    return true;
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
     vscode.window.showErrorMessage(
       `Opentix: Failed to initialize: ${errMsg}`,
     );
+    return false;
   }
 }

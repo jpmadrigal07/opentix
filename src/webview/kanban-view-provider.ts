@@ -385,9 +385,8 @@ export class KanbanViewProvider {
     const themeUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
         this.extensionUri,
-        'src',
+        'dist',
         'webview',
-        'kanban',
         'styles',
         'theme.css',
       ),
@@ -395,9 +394,8 @@ export class KanbanViewProvider {
     const boardUri = webview.asWebviewUri(
       vscode.Uri.joinPath(
         this.extensionUri,
-        'src',
+        'dist',
         'webview',
-        'kanban',
         'styles',
         'board.css',
       ),
@@ -406,9 +404,8 @@ export class KanbanViewProvider {
     // Read the HTML template and replace placeholders
     const htmlPath = path.join(
       this.extensionUri.fsPath,
-      'src',
+      'dist',
       'webview',
-      'kanban',
       'index.html',
     );
     let html = fs.readFileSync(htmlPath, 'utf-8');
