@@ -1,3 +1,13 @@
+## [1.1.1](https://github.com/jpmadrigal07/opentix/compare/v1.1.0...v1.1.1) (2026-02-18)
+
+### 🐛 Bug Fixes
+
+* implement two-path activation flow and service initialization ([b35779c](https://github.com/jpmadrigal07/opentix/commit/b35779caf627ea0ad5b77fd9ef8108078ae931cd))
+
+### 🧹 Chores
+
+* remove .opentix directory and its contents ([c0c987c](https://github.com/jpmadrigal07/opentix/commit/c0c987cb2a37175e4736f0c89a99172474fa80f9))
+
 ## [1.1.0](https://github.com/jpmadrigal07/opentix/compare/v1.0.1...v1.1.0) (2026-02-18)
 
 ### ✨ Features
