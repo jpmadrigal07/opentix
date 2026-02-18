@@ -22,7 +22,7 @@
     "kanban"
   ],
   "icon": "resources/icon.png",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "publisher": "jpmadrigal07",
   "license": "Apache-2.0",
   "engines": {
