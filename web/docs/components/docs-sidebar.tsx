@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Github } from 'lucide-react'
+import { Box } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -22,8 +22,8 @@ import { DocsSearch } from '@/components/docs-search'
 import { Separator } from '@/components/ui/separator'
 import type { Doc } from '@/.velite'
 
-const GITHUB_URL = 'https://github.com/jpmadrigal07/opentix'
 const VSCODE_MARKETPLACE_URL = 'https://marketplace.visualstudio.com/items?itemName=jpmadrigal07.opentix'
+const VSX_REGISTRY_URL = 'https://open-vsx.org/extension/jpmadrigal07/opentix'
 
 function VSCodeIcon({ className }: { className?: string }) {
   return (
@@ -120,6 +120,7 @@ export function DocsSidebar({ docs }: DocsSidebarProps) {
               </SidebarGroupContent>
             </SidebarGroup>
           ))}
+          <div className="pb-16" />
         </ScrollArea>
       </SidebarContent>
       <SidebarFooter className="md:hidden border-t border-sidebar-border p-4">
@@ -131,16 +132,16 @@ export function DocsSidebar({ docs }: DocsSidebarProps) {
           </div>
           <Separator />
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="flex-1" asChild aria-label="Install on VS Code">
+            <Button variant="outline" className="flex-1" asChild aria-label="VS Code Marketplace">
               <a href={VSCODE_MARKETPLACE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
                 <VSCodeIcon className="size-4" />
                 <span>VS Code</span>
               </a>
             </Button>
-            <Button variant="outline" className="flex-1" asChild aria-label="GitHub">
-              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
-                <Github className="size-4" />
-                <span>GitHub</span>
+            <Button variant="outline" className="flex-1" asChild aria-label="Open VSX Registry">
+              <a href={VSX_REGISTRY_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2">
+                <Box className="size-4" />
+                <span>Open VSX</span>
               </a>
             </Button>
           </div>

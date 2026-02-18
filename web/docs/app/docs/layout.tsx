@@ -62,6 +62,8 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
             <TooltipProvider>
               <div className="hidden md:flex items-center gap-2">
                 <DocsSearch docs={docs} />
+              </div>
+              <div className="flex items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="outline" size="icon" className="size-9" asChild aria-label="GitHub">
@@ -74,7 +76,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="size-9" asChild aria-label="VS Code Marketplace">
+                    <Button variant="outline" size="icon" className="hidden size-9 md:inline-flex" asChild aria-label="VS Code Marketplace">
                       <a href={VSCODE_MARKETPLACE_URL} target="_blank" rel="noopener noreferrer">
                         <VSCodeIcon className="size-4" />
                       </a>
@@ -84,7 +86,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" className="size-9" asChild aria-label="Open VSX Registry">
+                    <Button variant="outline" size="icon" className="hidden size-9 md:inline-flex" asChild aria-label="Open VSX Registry">
                       <a href={VSX_REGISTRY_URL} target="_blank" rel="noopener noreferrer">
                         <Box className="size-4" />
                       </a>
