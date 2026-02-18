@@ -1,6 +1,6 @@
 # Opentix
 
-Git-native ticket management for Agentic Coders. Store tickets as Markdown files in your repository. Visualize them on a Kanban board, manage sprints, auto-sync with your team, and give AI assistants full ticket context — all without leaving your editor.
+Git-native ticket management for Agentic Coders. Store tickets as Markdown files in your repository. Visualize them on a Kanban board, manage sprints, auto-sync with your team, and give AI assistants full ticket context and history — all without leaving your editor.
 
 ## Features
 
