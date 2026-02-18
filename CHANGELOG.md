@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/jpmadrigal07/opentix/compare/v1.2.0...v1.3.0) (2026-02-18)
+
+### ✨ Features
+
+* update Discord widget URL and enhance layout with tooltips for docs ([8fe2b1e](https://github.com/jpmadrigal07/opentix/commit/8fe2b1e16ba6d94778b7f5f6d3b219c9b0d0d2fc))
+
 ## [1.2.0](https://github.com/jpmadrigal07/opentix/compare/v1.1.1...v1.2.0) (2026-02-18)
 
 ### ✨ Features
