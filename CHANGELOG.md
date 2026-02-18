@@ -1,3 +1,13 @@
+## [1.2.0](https://github.com/jpmadrigal07/opentix/compare/v1.1.1...v1.2.0) (2026-02-18)
+
+### ✨ Features
+
+* enhance homepage with support links and community engagement options ([e9e08d1](https://github.com/jpmadrigal07/opentix/commit/e9e08d1027b88adb3fc46432d6ba03168e254580))
+
+### 🧹 Chores
+
+* update project description to include 'for Agentic Coders' ([f4a582d](https://github.com/jpmadrigal07/opentix/commit/f4a582db1c46fdb0b7db4f9e34157b96442903a7))
+
 ## [1.1.1](https://github.com/jpmadrigal07/opentix/compare/v1.1.0...v1.1.1) (2026-02-18)
 
 ### 🐛 Bug Fixes
