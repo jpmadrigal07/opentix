@@ -91,6 +91,11 @@ bun run test:unit      # run unit tests
 
 Then press **F5** in VS Code to launch the Extension Development Host.
 
+## Support
+
+- [**Buy Me a Coffee**](https://www.buymeacoffee.com/jpmadrigal07) — Support the project with a one-time or monthly coffee.
+- [**Discord**](https://discord.com/widget?id=1473807870352035880) — Join the Opentix community.
+
 ## License
 
 Licensed under the [Apache License 2.0](LICENSE).
