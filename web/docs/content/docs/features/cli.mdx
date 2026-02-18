@@ -1,0 +1,148 @@
+---
+title: CLI
+slug: features/cli
+description: A standalone command-line interface for Opentix that lets AI agents and scripts create, query, and manage tickets without VS Code.
+section: Features
+order: 6
+---
+
+<div className="rounded-lg border border-amber-500/50 bg-amber-500/15 dark:bg-amber-500/20 px-6">
+**This feature is not yet implemented**  
+This feature is currently under development. Nothing described on this page works today. The content below documents the planned design for future reference.
+</div>
+
+## Overview
+
+The Opentix CLI (`opentix`) is a standalone Node.js command-line tool that reads and writes the same `.opentix/` data as the VS Code extension. It enables AI coding agents, shell scripts, and CI pipelines to manage tickets without requiring VS Code.
+
+The CLI and the extension share a core library — they operate on the same Markdown files, the same index, and the same Git workflow. Changes made through the CLI appear on the Kanban board automatically (via the existing file watcher and auto-sync), and vice versa.
+
+## Planned Installation
+
+```bash
+npm install -g opentix-cli
+```
+
+Or run without installing:
+
+```bash
+npx opentix-cli ls
+```
+
+## Planned Commands
+
+### Ticket Management
+
+```bash
+opentix ls                                    # List tickets (default: open statuses)
+opentix ls --status in-progress               # Filter by status
+opentix ls --sprint SPR-0001 --priority high  # Combine filters
+opentix ls --json                             # JSON output for scripting
+
+opentix show OPTX-0012                        # Show full ticket details
+opentix show OPTX-0012 --json                 # JSON output
+
+opentix create "Add user auth"                # Create a ticket
+opentix create "Fix login" -p critical -s in-progress -a alice@team.com
+
+opentix update OPTX-0012 --status done        # Update fields
+opentix update OPTX-0012 --priority high --sprint SPR-0002
+
+opentix move OPTX-0012 review                 # Shorthand for status change
+
+opentix comment OPTX-0012 "Fixed in abc123"   # Add a comment
+
+opentix delete OPTX-0012                      # Delete a ticket
+opentix delete OPTX-0012 --force              # Skip confirmation
+```
+
+### Sprint Management
+
+```bash
+opentix sprint ls                             # List all sprints
+opentix sprint create "Sprint 3" --start 2026-03-01 --duration 2-week
+opentix sprint update SPR-0003 --name "Sprint 3 (extended)"
+opentix sprint delete SPR-0003                # Blocked if tickets reference it
+```
+
+### Sync & Context
+
+```bash
+opentix sync                                  # Pull + push
+opentix context OPTX-0012                     # AI context JSON for one ticket
+opentix context --all                         # AI context JSON for all tickets
+```
+
+### Project Setup
+
+```bash
+opentix init                                  # Initialize .opentix/ structure
+opentix init --defaults                       # Use recommended settings
+opentix config                                # Show current configuration
+opentix config --json                         # JSON output
+```
+
+## Output Modes
+
+By default, the CLI outputs human-readable tables. When piped or when `--json` is passed, it outputs JSON for scripting:
+
+```bash
+# Human-readable
+opentix ls
+# OPTX-0001  Add user auth       in-progress  high    SPR-0001
+# OPTX-0002  Fix login bug       backlog      medium  -
+
+# JSON (for AI agents and scripts)
+opentix ls --json | jq '.[0].id'
+# "OPTX-0001"
+```
+
+Piped output is automatically detected — when stdout is not a TTY, JSON is used by default.
+
+## Agent Workflow
+
+The CLI enables autonomous agent-driven workflows. An AI agent can work through an entire backlog without human intervention:
+
+```bash
+# Agent checks what's ready
+opentix ls --status backlog --json
+
+# Agent picks a ticket and starts it
+opentix move OPTX-0005 in-progress
+
+# Agent does the work...
+
+# Agent adds a note about what was done
+opentix comment OPTX-0005 "Implemented auth middleware in src/auth.ts"
+
+# Agent marks it done
+opentix move OPTX-0005 done
+
+# Agent picks the next ticket
+opentix ls --status backlog --json
+```
+
+This loop can be integrated into any AI coding agent's workflow (Claude, Cursor, Copilot, etc.) by adding instructions to the project's `AGENTS.md` or `CLAUDE.md`:
+
+```markdown
+## Task Tracking
+
+This project uses Opentix for ticket management.
+Run `opentix ls --status backlog --json` to see available tasks.
+Use `opentix move <id> in-progress` before starting work and `opentix move <id> done` when finished.
+```
+
+## Architecture
+
+The CLI shares a core library with the VS Code extension:
+
+- **Shared core**: Models, utilities, and services (ticket CRUD, Git operations, sprint management, AI context) live in a platform-agnostic `src/core/` directory
+- **Extension**: Wraps the core with VS Code UI (Kanban board, webview, status bar)
+- **CLI**: Wraps the core with `commander` for argument parsing and terminal output
+
+Changes made through the CLI trigger the extension's file watcher, so the Kanban board updates automatically when both are running.
+
+## Next Steps
+
+- Learn about [Git event automations](/docs/features/git-automations) for auto-transitioning tickets
+- See the [commands reference](/docs/reference/commands) for all available VS Code commands
