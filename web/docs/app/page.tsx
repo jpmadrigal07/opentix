@@ -90,7 +90,7 @@ export default function Home() {
         <p className="mt-6 max-w-xl px-2 text-lg leading-8 text-muted-foreground sm:px-0">
           Opentix stores tickets as Markdown files in your repository. Visualize
           them on a Kanban board, manage sprints, auto-sync with your team, and
-          give AI assistants full ticket context — all without leaving your
+          give AI assistants full ticket context and history — all without leaving your
           editor.
         </p>
 
