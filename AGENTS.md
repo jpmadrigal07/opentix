@@ -4,6 +4,7 @@
 
 - [Documentation Maintenance](#documentation-maintenance)
 - [Opentix Project Overview](#opentix-project-overview)
+- [Supported IDEs](#supported-ides)
 - [Core Features](#core-features)
 - [Technical Overview](#technical-overview)
 - [Project Stack](#project-stack)
@@ -56,7 +57,19 @@
 
 ## Opentix Project Overview
 
-**Opentix** is a VS Code extension for git-native ticket management. Tickets are stored as Markdown files with YAML frontmatter in the repository, visualized on a Kanban board inside VS Code, and synced through Git. All ticket data lives on the repository's default branch, keeping the developer's working branch untouched.
+**Opentix** is a VS Code extension for git-native ticket management. Tickets are stored as Markdown files with YAML frontmatter in the repository, visualized on a Kanban board inside the IDE, and synced through Git. All ticket data lives on the repository's default branch, keeping the developer's working branch untouched.
+
+### Supported IDEs
+
+Opentix works with any IDE that supports VS Code extensions:
+
+- **VS Code**
+- **Cursor**
+- **Windsurf**
+- **Antigravity**
+- **Eclipse Theia**
+- **Gitpod**
+- **Code-Server**
 
 ### Core Features
 
