@@ -1,3 +1,14 @@
+## [1.4.1](https://github.com/jpmadrigal07/opentix/compare/v1.4.0...v1.4.1) (2026-02-20)
+
+### 🐛 Bug Fixes
+
+* enhance Opentix initialization and synchronization process ([ff26b78](https://github.com/jpmadrigal07/opentix/commit/ff26b78555585d5972d16153e8c99caf55e04be7))
+
+### 🧹 Chores
+
+* clarify AI ticket context in documentation ([b5d75b9](https://github.com/jpmadrigal07/opentix/commit/b5d75b968ccb566630935cc90028d78586b08914))
+* update documentation for clarity on AI ticket context ([68622ec](https://github.com/jpmadrigal07/opentix/commit/68622ecc463ed272fe0c6acc99f79e9805e7eedc))
+
 ## [1.4.0](https://github.com/jpmadrigal07/opentix/compare/v1.3.0...v1.4.0) (2026-02-18)
 
 ### ✨ Features
