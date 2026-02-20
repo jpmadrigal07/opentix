@@ -224,7 +224,9 @@ opentix/
 The extension uses a **two-path activation** gated by `GitService.isInitialized()` (checks for `.opentix/config.yml` on the filesystem or via git plumbing on the default branch):
 
 - **Not initialized**: Services are created and commands registered, but no `.opentix/` files are created. The status bar shows "Opentix (init)" and links to the init command. The user must explicitly run "Opentix: Initialize Project" to scaffold the `.opentix/` directory.
-- **Already initialized**: The `startServices()` function runs -- sets up the worktree, ensures structure is current, starts the watcher, index, sync, and AI context services.
+- **Already initialized**: The `startServices()` function runs -- sets up the worktree, performs a one-time bootstrap sync from remote, ensures structure is current, starts the watcher/index, enables auto-sync (if `config.autoSync` is true), and starts AI context services.
+
+If `isInitialized()` initially returns false but a remote exists, activation performs `fetchDefaultBranchFromRemote()` and re-checks initialization once. This lets a newly installed machine discover an already-initialized Opentix setup on `origin/<defaultBranch>` without requiring IDE restarts.
 
 After `initProjectCommand` succeeds, it returns `true` and the command handler in `extension.ts` calls `startServices()` to bring the extension fully online. A `servicesStarted` flag prevents double-initialization.
 
@@ -276,9 +278,10 @@ Communication uses a **typed message protocol** defined in `src/webview/kanban/b
 2. Handler calls appropriate service (e.g., `TicketService.updateTicket()`)
 3. Service writes file via `GitService`
 4. `GitService.commitAndPush()` commits and pushes
-5. File watcher detects change -> `IndexService.rebuild()` (skips index.json write if content unchanged)
-6. Index change event -> `KanbanViewProvider.sendBoardUpdate()`
-7. Webview receives update -> re-renders board
+5. `KanbanViewProvider` immediately calls `IndexService.rebuild()` after local mutations (create/move/update/delete) and sends a fresh board snapshot, avoiding stale cached board state
+6. File watcher still detects changes and may fire additional `IndexService.rebuild()` events
+7. Index change event -> `KanbanViewProvider.sendBoardUpdate()`
+8. Webview receives update -> re-renders board
 
 **External changes** (AI agents, manual file edits):
 
@@ -294,10 +297,18 @@ Communication uses a **typed message protocol** defined in `src/webview/kanban/b
 ### Git Worktree Strategy
 
 - If workspace is on the **default branch**: uses the workspace root directly (no extra worktree)
-- If workspace is on a **feature branch**: creates `.opentix-worktree/` checked out to the default branch
-- All ticket files live in `.opentix/tickets/` on the default branch
+- If workspace is on a **feature branch**: creates `.opentix-worktree/` on a dedicated sync branch named `opentix-sync-<defaultBranch>` (seeded from `origin/<defaultBranch>` when available)
+- All ticket files live in `.opentix/tickets/` and are pushed to `origin/<defaultBranch>` from the sync branch using `HEAD:<defaultBranch>` refspec
 - Auto-commits with prefix: `opentix: <message>`
-- Auto-push with rebase-retry on conflict
+- Auto-push with merge-retry on conflict (never rebase, to avoid stuck worktree state)
+- **Default branch detection** (`detectDefaultBranch()`): checks origin/HEAD → local branches → remote tracking branches (origin/main, etc.). Never falls back to the current branch to prevent misidentifying a feature branch as default.
+- **Initialization check** (`isInitialized()`): tries both local ref (`main:path`) and remote tracking ref (`origin/main:path`) via git plumbing, so it works even when the default branch only exists as a remote tracking branch.
+- **Worktree branch verification**: `ensureWorktree()` verifies an existing worktree is on the expected sync branch (`opentix-sync-<defaultBranch>`) and recreates it if mismatched. If the default branch doesn't exist locally, creates from the remote tracking branch (`origin/main`).
+- **Per-operation worktree revalidation**: file operations (`readFile`/`writeFile`/`deleteFile`/`listFiles`) and git mutations (`pull`/`commitAndPush`/`hasDirtyOpentixFiles`) call `ensureWorktree()` at the start of each operation so branch switches in the active workspace don't leave stale worktree handles.
+- **Conflict recovery**: `pull()` and `commitAndPush()` abort any incomplete merge/rebase state on failure via `abortIncompleteGitState()`, restoring the worktree to a clean, usable state
+- **Startup health check**: `ensureWorktree()` calls `abortIncompleteGitState()` on startup to recover from stale rebase/merge states left over from a previous session
+- **Empty commit safety**: `commitAndPush()` gracefully handles "nothing to commit" instead of throwing, preventing cascading failures when changes were already committed by another code path
+- `.opentix-worktree` is auto-added to the user's project `.gitignore`
 
 ### Auto-Commit of External Changes
 

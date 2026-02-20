@@ -108,7 +108,16 @@ export class GitService {
 
   /**
    * Detect the repository's default branch dynamically.
-   * Tries origin/HEAD first, falls back to common names, then first available branch.
+   *
+   * Resolution order:
+   * 1. origin/HEAD symbolic ref (most reliable when set)
+   * 2. Local branches matching common names (main, master, trunk)
+   * 3. Remote tracking branches matching common names (origin/main, etc.)
+   * 4. Hard default: 'main'
+   *
+   * Notably, the "first available local branch" fallback was removed because
+   * it would silently return the user's current feature branch, causing
+   * the entire worktree strategy to be skipped.
    */
   async detectDefaultBranch(): Promise<string> {
     if (this._defaultBranch) {
@@ -127,8 +136,9 @@ export class GitService {
       // origin/HEAD not set -- try common names
     }
 
-    // Fallback: check common branch names
     const candidates = ['main', 'master', 'trunk'];
+
+    // Check local branches for common default names
     try {
       const branches = await this.repoGit.branchLocal();
       for (const candidate of candidates) {
@@ -137,13 +147,22 @@ export class GitService {
           return this._defaultBranch;
         }
       }
-      // Last resort: first available branch
-      if (branches.all.length > 0) {
-        this._defaultBranch = branches.all[0];
-        return this._defaultBranch;
+    } catch {
+      // No local branches
+    }
+
+    // Check remote tracking branches (handles the case where the user
+    // is on a feature branch and never checked out main locally)
+    try {
+      const remoteBranches = await this.repoGit.branch(['-r']);
+      for (const candidate of candidates) {
+        if (remoteBranches.all.includes(`origin/${candidate}`)) {
+          this._defaultBranch = candidate;
+          return this._defaultBranch;
+        }
       }
     } catch {
-      // No branches at all
+      // No remote branches
     }
 
     this._defaultBranch = 'main';
@@ -175,9 +194,31 @@ export class GitService {
   }
 
   /**
+   * Refresh the default branch ref from origin so initialization checks can
+   * discover .opentix metadata on a newly installed machine without requiring
+   * an IDE restart.
+   */
+  async fetchDefaultBranchFromRemote(): Promise<void> {
+    if (!(await this.hasRemote())) {
+      return;
+    }
+    const defaultBranch = await this.detectDefaultBranch();
+    try {
+      await this.repoGit.fetch('origin', defaultBranch);
+    } catch {
+      // Fallback to a plain fetch if branch-specific fetch fails
+      await this.repoGit.fetch('origin');
+    }
+  }
+
+  /**
    * Check whether the project has been explicitly initialized with Opentix.
    * Looks for config.yml on the local filesystem (default-branch checkout)
    * and via git plumbing (feature-branch checkout) to avoid creating a worktree.
+   *
+   * When checking via plumbing, tries both the bare branch name (local ref)
+   * and the origin/ prefixed name (remote tracking ref) to handle the case
+   * where the default branch exists only as a remote tracking branch.
    */
   async isInitialized(): Promise<boolean> {
     try {
@@ -187,15 +228,45 @@ export class GitService {
       // Not on filesystem -- check the default branch via git plumbing
     }
 
-    try {
-      const defaultBranch = await this.detectDefaultBranch();
-      await this.repoGit.raw([
-        'cat-file', '-e', `${defaultBranch}:${OPENTIX_DIR}/${CONFIG_FILE}`,
-      ]);
-      return true;
-    } catch {
-      return false;
+    const defaultBranch = await this.detectDefaultBranch();
+    const objectPath = `${OPENTIX_DIR}/${CONFIG_FILE}`;
+
+    // Try local ref first, then remote tracking ref
+    const refs = [defaultBranch, `origin/${defaultBranch}`];
+    for (const ref of refs) {
+      try {
+        await this.repoGit.raw(['cat-file', '-e', `${ref}:${objectPath}`]);
+        return true;
+      } catch {
+        // Ref doesn't resolve or file doesn't exist
+      }
     }
+
+    return false;
+  }
+
+  /**
+   * Branch name used inside the auxiliary worktree. It intentionally differs
+   * from the repository default branch so users can still checkout the default
+   * branch in their main workspace.
+   */
+  private getSyncBranchName(defaultBranch: string): string {
+    return `opentix-sync-${defaultBranch}`;
+  }
+
+  /**
+   * Resolve best start-point ref for worktree creation.
+   */
+  private async resolveDefaultBranchStartRef(defaultBranch: string): Promise<string> {
+    try {
+      const remoteBranches = await this.repoGit.branch(['-r']);
+      if (remoteBranches.all.includes(`origin/${defaultBranch}`)) {
+        return `origin/${defaultBranch}`;
+      }
+    } catch {
+      // Ignore and fallback to local ref
+    }
+    return defaultBranch;
   }
 
   /**
@@ -203,57 +274,110 @@ export class GitService {
    * If the workspace is already on the default branch, we use the workspace root
    * instead of creating a second worktree (Git does not allow the same branch
    * checked out in two places).
+   *
+   * Also recovers from stale mid-rebase/merge states left over from a
+   * previous session or a failed sync, and verifies an existing worktree
+   * is on the correct branch (recreating it if not).
    */
   async ensureWorktree(): Promise<void> {
     const defaultBranch = await this.detectDefaultBranch();
+    const syncBranch = this.getSyncBranchName(defaultBranch);
     const currentBranch = await this.getCurrentBranch();
+
+    console.log(`Opentix: Current branch "${currentBranch}", default branch "${defaultBranch}"`);
 
     // Already on the default branch: use workspace root, no separate worktree
     if (currentBranch === defaultBranch) {
       this._worktreePath = this.workspaceRoot;
       this.worktreeGit = this.repoGit;
+      await this.abortIncompleteGitState();
       return;
     }
 
     const wtPath = path.join(this.workspaceRoot, WORKTREE_DIR);
+    let needsCreate = true;
+
+    // Check if worktree already exists
+    try {
+      await fs.access(path.join(wtPath, '.git'));
+      const wtGit = simpleGit(wtPath);
+
+      // Verify the worktree is on the expected branch
+      const wtBranch = (await wtGit.revparse(['--abbrev-ref', 'HEAD'])).trim();
+      if (wtBranch === syncBranch) {
+        this._worktreePath = wtPath;
+        this.worktreeGit = wtGit;
+        await this.abortIncompleteGitState();
+        needsCreate = false;
+        console.log(`Opentix: Reusing existing worktree on "${syncBranch}"`);
+      } else {
+        console.log(`Opentix: Worktree on wrong branch "${wtBranch}", expected "${syncBranch}" -- recreating`);
+      }
+    } catch {
+      // Worktree doesn't exist or can't read branch
+    }
+
+    if (!needsCreate) {
+      return;
+    }
+
+    // Clean up before (re)creating
+    this.worktreeGit = null;
+    this._worktreePath = null;
 
     try {
-      // Check if worktree already exists
-      await fs.access(path.join(wtPath, '.git'));
-      // Worktree exists -- ensure we have a simple-git instance
-      this._worktreePath = wtPath;
-      if (!this.worktreeGit) {
-        this.worktreeGit = simpleGit(wtPath);
-      }
-      return;
+      await this.repoGit.raw(['worktree', 'remove', '--force', wtPath]);
     } catch {
-      // Worktree doesn't exist -- create it
+      // Not a registered worktree
     }
 
     try {
-      // Clean up any stale worktree entry
       await this.repoGit.raw(['worktree', 'prune']);
     } catch {
       // Ignore prune errors
     }
 
     try {
-      // Remove leftover directory if it exists without being a proper worktree
       await fs.rm(wtPath, { recursive: true, force: true });
     } catch {
-      // Directory doesn't exist, that's fine
+      // Directory doesn't exist
     }
 
-    // Create the worktree
+    // Create/refresh worktree on a dedicated sync branch so main remains
+    // available in the primary workspace.
+    const startRef = await this.resolveDefaultBranchStartRef(defaultBranch);
     await this.repoGit.raw([
-      'worktree',
-      'add',
-      wtPath,
-      defaultBranch,
+      'worktree', 'add', '-B', syncBranch, wtPath, startRef,
     ]);
 
     this._worktreePath = wtPath;
     this.worktreeGit = simpleGit(wtPath);
+
+    console.log(`Opentix: Created worktree for "${syncBranch}" (from ${startRef}) at ${wtPath}`);
+
+    // Ensure the worktree directory is gitignored in the user's project
+    await this.ensureGitignoreEntry(WORKTREE_DIR);
+  }
+
+  /**
+   * Abort any in-progress rebase or merge in the worktree.
+   * Called on startup and after failed pull/push to restore
+   * the worktree to a clean, usable state.
+   */
+  private async abortIncompleteGitState(): Promise<void> {
+    if (!this.worktreeGit) { return; }
+    try {
+      await this.worktreeGit.raw(['rebase', '--abort']);
+      console.log('Opentix: Aborted stale rebase in worktree');
+    } catch {
+      // Not in a rebase state -- expected
+    }
+    try {
+      await this.worktreeGit.raw(['merge', '--abort']);
+      console.log('Opentix: Aborted stale merge in worktree');
+    } catch {
+      // Not in a merge state -- expected
+    }
   }
 
   /**
@@ -391,6 +515,7 @@ Describe the ticket here.
    * Read a file from the worktree.
    */
   async readFile(relativePath: string): Promise<string> {
+    await this.ensureWorktree();
     const fullPath = path.join(this.worktreePath, relativePath);
     return fs.readFile(fullPath, 'utf-8');
   }
@@ -399,6 +524,7 @@ Describe the ticket here.
    * Write a file in the worktree.
    */
   async writeFile(relativePath: string, content: string): Promise<void> {
+    await this.ensureWorktree();
     const fullPath = path.join(this.worktreePath, relativePath);
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.writeFile(fullPath, content, 'utf-8');
@@ -408,6 +534,7 @@ Describe the ticket here.
    * Delete a file from the worktree.
    */
   async deleteFile(relativePath: string): Promise<void> {
+    await this.ensureWorktree();
     const fullPath = path.join(this.worktreePath, relativePath);
     await fs.unlink(fullPath);
   }
@@ -416,6 +543,7 @@ Describe the ticket here.
    * Check if a file exists in the worktree.
    */
   async fileExists(relativePath: string): Promise<boolean> {
+    await this.ensureWorktree();
     try {
       await fs.access(path.join(this.worktreePath, relativePath));
       return true;
@@ -428,6 +556,7 @@ Describe the ticket here.
    * List files in a directory within the worktree.
    */
   async listFiles(relativePath: string): Promise<string[]> {
+    await this.ensureWorktree();
     const fullPath = path.join(this.worktreePath, relativePath);
     try {
       const entries = await fs.readdir(fullPath);
@@ -443,6 +572,7 @@ Describe the ticket here.
    * Guarded by a reentrancy flag to prevent concurrent git mutations.
    */
   async commitAndPush(message: string): Promise<boolean> {
+    await this.ensureWorktree();
     if (this._gitOpInProgress) {
       console.log('Opentix: Skipping commitAndPush, git operation in progress');
       return false;
@@ -458,26 +588,38 @@ Describe the ticket here.
         path.join(OPENTIX_DIR, '*'),
       );
 
-      // Commit
+      // Commit (gracefully handle "nothing to commit")
       const commitMsg = `${COMMIT_PREFIX}: ${message}`;
-      await this.worktreeGit.commit(commitMsg);
+      try {
+        await this.worktreeGit.commit(commitMsg);
+      } catch (commitErr: unknown) {
+        const msg = commitErr instanceof Error ? commitErr.message : String(commitErr);
+        if (msg.includes('nothing to commit') || msg.includes('no changes added')) {
+          return false;
+        }
+        throw commitErr;
+      }
 
       // Push if remote exists
       if (await this.hasRemote()) {
         try {
           const defaultBranch = await this.detectDefaultBranch();
-          await this.worktreeGit.push('origin', defaultBranch);
+          await this.worktreeGit.push('origin', `HEAD:${defaultBranch}`);
           return true;
-        } catch (err: unknown) {
-          // Push rejected -- try pull-rebase-retry
+        } catch {
+          // Push rejected -- pull-merge-retry (merge, not rebase, to avoid
+          // leaving the worktree in an unrecoverable mid-rebase state)
           try {
             const defaultBranch = await this.detectDefaultBranch();
             await this.worktreeGit.pull('origin', defaultBranch, {
-              '--rebase': null,
+              '--no-rebase': null,
+              '--no-edit': null,
             });
-            await this.worktreeGit.push('origin', defaultBranch);
+            await this.worktreeGit.push('origin', `HEAD:${defaultBranch}`);
             return true;
           } catch (retryErr: unknown) {
+            // Merge/pull failed -- abort to restore the worktree to a clean state
+            await this.abortIncompleteGitState();
             const errMsg =
               retryErr instanceof Error ? retryErr.message : String(retryErr);
             vscode.window.showWarningMessage(
@@ -498,8 +640,12 @@ Describe the ticket here.
    * Pull latest changes from remote into the worktree.
    * Returns true if there were new changes.
    * Guarded by a reentrancy flag to prevent concurrent git mutations.
+   *
+   * Uses merge (not rebase) to avoid leaving the worktree in an
+   * unrecoverable mid-rebase state when conflicts occur.
    */
   async pull(): Promise<boolean> {
+    await this.ensureWorktree();
     if (this._gitOpInProgress) {
       console.log('Opentix: Skipping pull, git operation in progress');
       return false;
@@ -512,10 +658,18 @@ Describe the ticket here.
     try {
       const defaultBranch = await this.detectDefaultBranch();
       const result = await this.worktreeGit.pull('origin', defaultBranch, {
-        '--rebase': null,
+        '--no-rebase': null,
+        '--no-edit': null,
       });
-      return (result.summary?.changes ?? 0) > 0;
-    } catch {
+      const changes = result.summary?.changes ?? 0;
+      if (changes > 0) {
+        console.log(`Opentix: Pulled ${changes} change(s) from origin/${defaultBranch}`);
+      }
+      return changes > 0;
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.log(`Opentix: Pull failed (${errMsg}), aborting incomplete state`);
+      await this.abortIncompleteGitState();
       return false;
     } finally {
       this._gitOpInProgress = false;
@@ -625,6 +779,7 @@ Describe the ticket here.
    * Returns true if any files are modified, untracked, or deleted.
    */
   async hasDirtyOpentixFiles(): Promise<boolean> {
+    await this.ensureWorktree();
     if (!this.worktreeGit) {
       return false;
     }

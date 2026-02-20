@@ -37,6 +37,13 @@ async function startServices(): Promise<void> {
   servicesStarted = true;
 
   await gitService.ensureWorktree();
+
+  // Bootstrap from remote immediately so new machine installs load the latest
+  // ticket state without requiring restarts.
+  if (await gitService.hasRemote()) {
+    await syncService.sync();
+  }
+
   await gitService.ensureOpentixStructure();
 
   try {
@@ -48,13 +55,18 @@ async function startServices(): Promise<void> {
   watcherService.start();
   await indexService.rebuild();
 
-  if (await gitService.hasRemote()) {
-    syncService.startAutoSync(DEFAULT_SYNC_INTERVAL_SECONDS);
+  const config = await gitService.readConfig();
+  if ((await gitService.hasRemote()) && config.autoSync) {
+    const intervalSeconds =
+      config.syncIntervalSeconds > 0
+        ? config.syncIntervalSeconds
+        : DEFAULT_SYNC_INTERVAL_SECONDS;
+    // Skip immediate sync here; bootstrap sync already ran above.
+    syncService.startAutoSync(intervalSeconds, false);
   }
 
   // AI context auto-detection (guarded by config)
   // Precedence: VS Code user setting (if explicitly set) > config.yml > default (true)
-  const config = await gitService.readConfig();
   const vscodeSetting = vscode.workspace.getConfiguration('opentix').inspect<boolean>('aiContext.enabled');
   const userExplicitlySet = vscodeSetting?.globalValue !== undefined
     || vscodeSetting?.workspaceValue !== undefined
@@ -227,7 +239,16 @@ export async function activate(
 
   // Only start services if the project was explicitly initialized.
   // Otherwise, show a status bar prompt and wait for the user to run init.
-  const initialized = await gitService.isInitialized();
+  let initialized = await gitService.isInitialized();
+  if (!initialized && await gitService.hasRemote()) {
+    // New machine install: refresh remote refs once, then re-check initialization.
+    try {
+      await gitService.fetchDefaultBranchFromRemote();
+      initialized = await gitService.isInitialized();
+    } catch {
+      // Ignore and fall through to uninitialized prompt
+    }
+  }
   if (!initialized) {
     showUninitializedStatusBar();
     return;

@@ -127,8 +127,9 @@ export class KanbanViewProvider {
             sprint: msg.sprint,
             assignees: msg.assignees,
           });
-          // Index will be updated via the file watcher
-          const index = await this.indexService.getIndex();
+          // Refresh from disk after local mutation; cached index can be stale
+          // before file watcher events arrive.
+          const index = await this.indexService.rebuild();
           this.sendBoardUpdate(index);
           vscode.window.showInformationMessage(
             `Opentix: Ticket created.`,
@@ -147,7 +148,8 @@ export class KanbanViewProvider {
           await this.ticketService.updateTicket(msg.id, {
             status: msg.newStatus as any,
           });
-          const index = await this.indexService.getIndex();
+          // Force refresh so the moved card appears in the new column immediately.
+          const index = await this.indexService.rebuild();
           this.sendBoardUpdate(index);
         } catch (err: unknown) {
           const errMsg = err instanceof Error ? err.message : String(err);
@@ -187,7 +189,8 @@ export class KanbanViewProvider {
               type: 'ticketDetail',
               ticket: this.buildTicketDetail(updated),
             });
-            const index = await this.indexService.getIndex();
+            // Rebuild to avoid serving stale cached board after ticket edits.
+            const index = await this.indexService.rebuild();
             this.sendBoardUpdate(index);
           }
         } catch (err: unknown) {
@@ -203,7 +206,8 @@ export class KanbanViewProvider {
         try {
           await this.ticketService.deleteTicket(msg.id);
           this.sendMessage({ type: 'ticketDetail', ticket: null });
-          const index = await this.indexService.getIndex();
+          // Rebuild to ensure deleted card disappears immediately.
+          const index = await this.indexService.rebuild();
           this.sendBoardUpdate(index);
           vscode.window.showInformationMessage(
             `Opentix: Ticket ${msg.id} deleted.`,

@@ -23,11 +23,13 @@ export class SyncService {
   /**
    * Start background sync with the given interval in seconds.
    */
-  startAutoSync(intervalSeconds: number): void {
+  startAutoSync(intervalSeconds: number, runInitialSync: boolean = true): void {
     this.stopAutoSync();
 
-    // Do an initial sync
-    this.sync();
+    // Do an initial sync unless the caller already performed bootstrap sync
+    if (runInitialSync) {
+      this.sync();
+    }
 
     this.syncInterval = setInterval(
       () => this.sync(),
