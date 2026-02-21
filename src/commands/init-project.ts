@@ -160,8 +160,24 @@ async function runCustomizeWizard(): Promise<OpentixConfig | undefined> {
 }
 
 /**
+ * Check if .opentix exists on the default branch in the remote.
+ * Fetches from origin first so the check is accurate on a new machine.
+ */
+async function isOpentixOnRemoteMain(gitService: GitService): Promise<boolean> {
+  if (!(await gitService.hasRemote())) {
+    return false;
+  }
+  await gitService.fetchDefaultBranchFromRemote();
+  return gitService.isInitialized();
+}
+
+/**
  * Command handler for opentix.initProject.
- * Shows an onboarding wizard and initializes the Opentix structure in the current workspace.
+ *
+ * New computer setup:
+ * - If .opentix already exists on main (remote): pull changes and join the project.
+ * - If not: run the full init wizard and scaffold.
+ *
  * Returns `true` if initialization succeeded so the caller can start services.
  */
 export async function initProjectCommand(
@@ -176,7 +192,18 @@ export async function initProjectCommand(
       return false;
     }
 
-    // Step 0: Choose setup mode
+    // New computer: check if project was already initialized on main
+    const existsOnRemote = await isOpentixOnRemoteMain(gitService);
+    if (existsOnRemote) {
+      vscode.window.showInformationMessage(
+        'Opentix: Found existing project on main. Pulling changes and joining...',
+      );
+      // Return true so extension handler calls startServices(), which will
+      // ensureWorktree, sync (pull), ensureOpentixStructure, and start all services.
+      return true;
+    }
+
+    // Full init: project not yet initialized
     const setupMode = await vscode.window.showQuickPick(
       [
         {

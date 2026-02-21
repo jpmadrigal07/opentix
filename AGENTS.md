@@ -223,7 +223,7 @@ opentix/
 
 The extension uses a **two-path activation** gated by `GitService.isInitialized()` (checks for `.opentix/config.yml` on the filesystem or via git plumbing on the default branch):
 
-- **Not initialized**: Services are created and commands registered, but no `.opentix/` files are created. The status bar shows "Opentix (init)" and links to the init command. The user must explicitly run "Opentix: Initialize Project" to scaffold the `.opentix/` directory.
+- **Not initialized**: Services are created and commands registered, but no `.opentix/` files are created. The status bar shows "Opentix (init)" and links to the init command. When the user runs "Opentix: Initialize Project", the init command first checks if `.opentix` already exists on main (remote). If yes, it fetches, pulls, and joins the existing project (no wizard). If no, it runs the full onboarding wizard and scaffolds.
 - **Already initialized**: The `startServices()` function runs -- sets up the worktree, performs a one-time bootstrap sync from remote, ensures structure is current, starts the watcher/index, enables auto-sync (if `config.autoSync` is true), and starts AI context services.
 
 If `isInitialized()` initially returns false but a remote exists, activation performs `fetchDefaultBranchFromRemote()` and re-checks initialization once. This lets a newly installed machine discover an already-initialized Opentix setup on `origin/<defaultBranch>` without requiring IDE restarts.
