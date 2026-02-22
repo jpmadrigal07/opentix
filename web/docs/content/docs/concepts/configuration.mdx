@@ -34,7 +34,7 @@ autoSync: true
 syncIntervalSeconds: 60
 
 # How changes are pushed to remote
-# "direct" = push immediately after commit
+# "direct" = push immediately to holder branch (`opentix`) after commit
 # "branch-pr" = reserved for future PR-based workflows
 pushMode: direct
 
@@ -60,7 +60,7 @@ aiContext:
 | `defaultAssignee` | `string \| null` | `null` | Name to auto-assign when creating tickets with no explicit assignees. |
 | `autoSync` | `boolean` | `true` | Enable background sync (periodic pull from remote). |
 | `syncIntervalSeconds` | `number` | `60` | How often to pull from remote, in seconds. |
-| `pushMode` | `string` | `direct` | Push strategy: `direct` or `branch-pr`. |
+| `pushMode` | `string` | `direct` | Push strategy: `direct` (to `opentix` holder branch) or `branch-pr`. |
 | `commitStrategy` | `string` | `immediate` | Commit timing: `immediate` (per action) or `debounce` (batched). |
 | `commitDebounceSeconds` | `number` | `5` | Debounce window in seconds. Only applies when `commitStrategy` is `debounce`. |
 | `defaultBranch` | `string` | Auto-detected | Override the auto-detected default branch name. |

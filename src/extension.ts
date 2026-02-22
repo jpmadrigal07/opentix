@@ -241,9 +241,9 @@ export async function activate(
   // Otherwise, show a status bar prompt and wait for the user to run init.
   let initialized = await gitService.isInitialized();
   if (!initialized && await gitService.hasRemote()) {
-    // New machine install: refresh remote refs once, then re-check initialization.
+    // New machine install: refresh holder-branch refs once, then re-check initialization.
     try {
-      await gitService.fetchDefaultBranchFromRemote();
+      await gitService.fetchOpentixHolderBranchFromRemote();
       initialized = await gitService.isInitialized();
     } catch {
       // Ignore and fall through to uninitialized prompt

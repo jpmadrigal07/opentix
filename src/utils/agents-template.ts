@@ -27,7 +27,7 @@ Use it as a reference when reading, creating, or modifying tickets and sprints.
 
 Opentix is a git-native ticket management system. All project tickets are stored
 as Markdown files with YAML frontmatter inside this \`.opentix/\` directory.
-The data lives on the repository's default branch and is synced through Git,
+The data lives on the dedicated \`opentix\` holder branch and is synced through Git,
 keeping developer working branches untouched.
 
 ---
@@ -254,7 +254,7 @@ commitDebounceSeconds: ${config.commitDebounceSeconds}
 | \`defaultAssignee\` | Auto-assigned user for new tickets (\`null\` for none). |
 | \`autoSync\` | Enable background sync with remote. |
 | \`syncIntervalSeconds\` | Interval between automatic syncs. |
-| \`pushMode\` | \`direct\` (push to default branch) or \`branch-pr\` (open PR). |
+| \`pushMode\` | \`direct\` (push to \`opentix\` holder branch) or \`branch-pr\` (open PR). |
 | \`commitStrategy\` | \`immediate\` (commit per action) or \`debounce\` (batch). |
 | \`commitDebounceSeconds\` | Seconds to wait before batching commits. |
 

@@ -8,7 +8,7 @@ order: 5
 
 ## Overview
 
-Opentix syncs ticket data through Git. All `.opentix/` files (tickets, index, sprints, team registry) live on the default branch and are committed and pushed like any other file. The sync system runs in the background so your team always sees the latest state.
+Opentix syncs ticket data through Git. All `.opentix/` files (tickets, index, sprints, team registry) live on the dedicated `opentix` holder branch and are committed and pushed like any other file. The sync system runs in the background so your team always sees the latest state.
 
 ## Auto-Sync
 
@@ -24,7 +24,7 @@ syncIntervalSeconds: 60
 
 Each sync cycle:
 
-1. Pulls from the remote (with rebase)
+1. Pulls from the remote holder branch (`origin/opentix`) using merge-safe sync
 2. Rebuilds the ticket index if any files changed
 3. Sends the updated board state to the webview
 
@@ -86,10 +86,10 @@ Manual sync performs a pull and refreshes the board/index regardless of the auto
 
 ## Conflict Resolution
 
-When multiple team members edit tickets simultaneously, Git may encounter conflicts. Opentix handles this with a **rebase-retry** strategy:
+When multiple team members edit tickets simultaneously, Git may encounter conflicts. Opentix handles this with a **merge-retry** strategy:
 
-1. Pull with rebase
-2. If a conflict occurs, retry the operation
+1. Pull with merge (no rebase)
+2. If a conflict occurs, abort incomplete state and retry safely
 3. Markdown ticket files are designed to minimize conflicts — frontmatter changes are typically on different lines, and comments are append-only
 
 In practice, conflicts are rare because:

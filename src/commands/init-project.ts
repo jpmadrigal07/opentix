@@ -160,14 +160,14 @@ async function runCustomizeWizard(): Promise<OpentixConfig | undefined> {
 }
 
 /**
- * Check if .opentix exists on the default branch in the remote.
+ * Check if .opentix exists on the holder branch in the remote.
  * Fetches from origin first so the check is accurate on a new machine.
  */
-async function isOpentixOnRemoteMain(gitService: GitService): Promise<boolean> {
+async function isOpentixOnRemoteHolder(gitService: GitService): Promise<boolean> {
   if (!(await gitService.hasRemote())) {
     return false;
   }
-  await gitService.fetchDefaultBranchFromRemote();
+  await gitService.fetchOpentixHolderBranchFromRemote();
   return gitService.isInitialized();
 }
 
@@ -175,7 +175,7 @@ async function isOpentixOnRemoteMain(gitService: GitService): Promise<boolean> {
  * Command handler for opentix.initProject.
  *
  * New computer setup:
- * - If .opentix already exists on main (remote): pull changes and join the project.
+ * - If .opentix already exists on holder branch (remote): pull changes and join the project.
  * - If not: run the full init wizard and scaffold.
  *
  * Returns `true` if initialization succeeded so the caller can start services.
@@ -192,11 +192,12 @@ export async function initProjectCommand(
       return false;
     }
 
-    // New computer: check if project was already initialized on main
-    const existsOnRemote = await isOpentixOnRemoteMain(gitService);
+    // New computer: check if project was already initialized on holder branch
+    const existsOnRemote = await isOpentixOnRemoteHolder(gitService);
     if (existsOnRemote) {
+      const holderBranch = await gitService.resolveOpentixHolderBranch();
       vscode.window.showInformationMessage(
-        'Opentix: Found existing project on main. Pulling changes and joining...',
+        `Opentix: Found existing project on ${holderBranch}. Pulling changes and joining...`,
       );
       // Return true so extension handler calls startServices(), which will
       // ensureWorktree, sync (pull), ensureOpentixStructure, and start all services.

@@ -34,6 +34,14 @@ export class GitService {
   }
 
   /**
+   * Resolve the central holder branch for Opentix metadata.
+   * This is the source-of-truth branch for `.opentix/`.
+   */
+  async resolveOpentixHolderBranch(): Promise<string> {
+    return 'opentix';
+  }
+
+  /**
    * Get the worktree base path.
    * When already on the default branch, this is the workspace root.
    * Otherwise it is the dedicated .opentix-worktree directory.
@@ -194,17 +202,61 @@ export class GitService {
   }
 
   /**
-   * Refresh the default branch ref from origin so initialization checks can
-   * discover .opentix metadata on a newly installed machine without requiring
-   * an IDE restart.
+   * Check whether a remote tracking branch exists.
    */
-  async fetchDefaultBranchFromRemote(): Promise<void> {
+  private async remoteBranchExists(branchName: string): Promise<boolean> {
+    try {
+      const remoteBranches = await this.repoGit.branch(['-r']);
+      return remoteBranches.all.includes(`origin/${branchName}`);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check whether a local branch exists.
+   */
+  private async localBranchExists(branchName: string): Promise<boolean> {
+    try {
+      const localBranches = await this.repoGit.branchLocal();
+      return localBranches.all.includes(branchName);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Ensure the central holder branch exists on remote by seeding it from
+   * the default branch when missing.
+   */
+  async ensureOpentixHolderBranch(): Promise<void> {
     if (!(await this.hasRemote())) {
       return;
     }
+
+    const holderBranch = await this.resolveOpentixHolderBranch();
+    if (await this.remoteBranchExists(holderBranch)) {
+      return;
+    }
+
     const defaultBranch = await this.detectDefaultBranch();
+    const seedRef = await this.resolveDefaultBranchStartRef(defaultBranch);
+    await this.repoGit.raw(['branch', '-f', holderBranch, seedRef]);
+    await this.repoGit.push('origin', `${holderBranch}:${holderBranch}`);
+  }
+
+  /**
+   * Refresh the holder branch ref from origin so initialization checks can
+   * discover `.opentix` metadata on a newly installed machine without requiring
+   * an IDE restart.
+   */
+  async fetchOpentixHolderBranchFromRemote(): Promise<void> {
+    if (!(await this.hasRemote())) {
+      return;
+    }
+    const holderBranch = await this.resolveOpentixHolderBranch();
     try {
-      await this.repoGit.fetch('origin', defaultBranch);
+      await this.repoGit.fetch('origin', holderBranch);
     } catch {
       // Fallback to a plain fetch if branch-specific fetch fails
       await this.repoGit.fetch('origin');
@@ -228,12 +280,24 @@ export class GitService {
       // Not on filesystem -- check the default branch via git plumbing
     }
 
-    const defaultBranch = await this.detectDefaultBranch();
+    const holderBranch = await this.resolveOpentixHolderBranch();
     const objectPath = `${OPENTIX_DIR}/${CONFIG_FILE}`;
 
-    // Try local ref first, then remote tracking ref
-    const refs = [defaultBranch, `origin/${defaultBranch}`];
+    // Canonical checks: holder branch first (remote then local).
+    const refs = [`origin/${holderBranch}`, holderBranch];
     for (const ref of refs) {
+      try {
+        await this.repoGit.raw(['cat-file', '-e', `${ref}:${objectPath}`]);
+        return true;
+      } catch {
+        // Ref doesn't resolve or file doesn't exist
+      }
+    }
+
+    // Migration fallback: legacy default-branch storage.
+    const defaultBranch = await this.detectDefaultBranch();
+    const legacyRefs = [`origin/${defaultBranch}`, defaultBranch];
+    for (const ref of legacyRefs) {
       try {
         await this.repoGit.raw(['cat-file', '-e', `${ref}:${objectPath}`]);
         return true;
@@ -246,16 +310,38 @@ export class GitService {
   }
 
   /**
-   * Branch name used inside the auxiliary worktree. It intentionally differs
-   * from the repository default branch so users can still checkout the default
-   * branch in their main workspace.
+   * Legacy alias kept to avoid touching all callers at once.
    */
-  private getSyncBranchName(defaultBranch: string): string {
-    return `opentix-sync-${defaultBranch}`;
+  async fetchDefaultBranchFromRemote(): Promise<void> {
+    await this.fetchOpentixHolderBranchFromRemote();
+  }
+
+  /**
+   * Branch name used inside the auxiliary worktree. It intentionally differs
+   * from the repository holder branch so users can still checkout any branch
+   * in their main workspace.
+   */
+  private getSyncBranchName(holderBranch: string): string {
+    return `opentix-sync-${holderBranch}`;
   }
 
   /**
    * Resolve best start-point ref for worktree creation.
+   */
+  private async resolveHolderBranchStartRef(holderBranch: string): Promise<string> {
+    if (await this.remoteBranchExists(holderBranch)) {
+      return `origin/${holderBranch}`;
+    }
+    if (await this.localBranchExists(holderBranch)) {
+      return holderBranch;
+    }
+    // Fallback for first-run migration/bootstrap scenarios.
+    const defaultBranch = await this.detectDefaultBranch();
+    return this.resolveDefaultBranchStartRef(defaultBranch);
+  }
+
+  /**
+   * Resolve best start-point ref for worktree creation from default branch.
    */
   private async resolveDefaultBranchStartRef(defaultBranch: string): Promise<string> {
     try {
@@ -270,8 +356,8 @@ export class GitService {
   }
 
   /**
-   * Ensure the worktree exists and is checked out to the default branch.
-   * If the workspace is already on the default branch, we use the workspace root
+   * Ensure the worktree exists and is checked out to the holder branch.
+   * If the workspace is already on the holder branch, we use the workspace root
    * instead of creating a second worktree (Git does not allow the same branch
    * checked out in two places).
    *
@@ -280,14 +366,23 @@ export class GitService {
    * is on the correct branch (recreating it if not).
    */
   async ensureWorktree(): Promise<void> {
-    const defaultBranch = await this.detectDefaultBranch();
-    const syncBranch = this.getSyncBranchName(defaultBranch);
+    const holderBranch = await this.resolveOpentixHolderBranch();
+    const syncBranch = this.getSyncBranchName(holderBranch);
     const currentBranch = await this.getCurrentBranch();
 
-    console.log(`Opentix: Current branch "${currentBranch}", default branch "${defaultBranch}"`);
+    if (await this.hasRemote()) {
+      try {
+        await this.ensureOpentixHolderBranch();
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.log(`Opentix: Could not ensure holder branch "${holderBranch}" (${errMsg})`);
+      }
+    }
 
-    // Already on the default branch: use workspace root, no separate worktree
-    if (currentBranch === defaultBranch) {
+    console.log(`Opentix: Current branch "${currentBranch}", holder branch "${holderBranch}"`);
+
+    // Already on the holder branch: use workspace root, no separate worktree
+    if (currentBranch === holderBranch) {
       this._worktreePath = this.workspaceRoot;
       this.worktreeGit = this.repoGit;
       await this.abortIncompleteGitState();
@@ -343,9 +438,9 @@ export class GitService {
       // Directory doesn't exist
     }
 
-    // Create/refresh worktree on a dedicated sync branch so main remains
+    // Create/refresh worktree on a dedicated sync branch so holder branch remains
     // available in the primary workspace.
-    const startRef = await this.resolveDefaultBranchStartRef(defaultBranch);
+    const startRef = await this.resolveHolderBranchStartRef(holderBranch);
     await this.repoGit.raw([
       'worktree', 'add', '-B', syncBranch, wtPath, startRef,
     ]);
@@ -603,19 +698,19 @@ Describe the ticket here.
       // Push if remote exists
       if (await this.hasRemote()) {
         try {
-          const defaultBranch = await this.detectDefaultBranch();
-          await this.worktreeGit.push('origin', `HEAD:${defaultBranch}`);
+          const holderBranch = await this.resolveOpentixHolderBranch();
+          await this.worktreeGit.push('origin', `HEAD:${holderBranch}`);
           return true;
         } catch {
           // Push rejected -- pull-merge-retry (merge, not rebase, to avoid
           // leaving the worktree in an unrecoverable mid-rebase state)
           try {
-            const defaultBranch = await this.detectDefaultBranch();
-            await this.worktreeGit.pull('origin', defaultBranch, {
+            const holderBranch = await this.resolveOpentixHolderBranch();
+            await this.worktreeGit.pull('origin', holderBranch, {
               '--no-rebase': null,
               '--no-edit': null,
             });
-            await this.worktreeGit.push('origin', `HEAD:${defaultBranch}`);
+            await this.worktreeGit.push('origin', `HEAD:${holderBranch}`);
             return true;
           } catch (retryErr: unknown) {
             // Merge/pull failed -- abort to restore the worktree to a clean state
@@ -656,14 +751,14 @@ Describe the ticket here.
 
     this._gitOpInProgress = true;
     try {
-      const defaultBranch = await this.detectDefaultBranch();
-      const result = await this.worktreeGit.pull('origin', defaultBranch, {
+      const holderBranch = await this.resolveOpentixHolderBranch();
+      const result = await this.worktreeGit.pull('origin', holderBranch, {
         '--no-rebase': null,
         '--no-edit': null,
       });
       const changes = result.summary?.changes ?? 0;
       if (changes > 0) {
-        console.log(`Opentix: Pulled ${changes} change(s) from origin/${defaultBranch}`);
+        console.log(`Opentix: Pulled ${changes} change(s) from origin/${holderBranch}`);
       }
       return changes > 0;
     } catch (err: unknown) {

@@ -296,14 +296,16 @@ Communication uses a **typed message protocol** defined in `src/webview/kanban/b
 
 ### Git Worktree Strategy
 
-- If workspace is on the **default branch**: uses the workspace root directly (no extra worktree)
-- If workspace is on a **feature branch**: creates `.opentix-worktree/` on a dedicated sync branch named `opentix-sync-<defaultBranch>` (seeded from `origin/<defaultBranch>` when available)
-- All ticket files live in `.opentix/tickets/` and are pushed to `origin/<defaultBranch>` from the sync branch using `HEAD:<defaultBranch>` refspec
+- **Holder branch**: Opentix metadata lives on the dedicated `opentix` branch (source of truth), not on `main`
+- If workspace is on the **holder branch** (`opentix`): uses the workspace root directly (no extra worktree)
+- If workspace is on any **other branch**: creates `.opentix-worktree/` on a dedicated sync branch named `opentix-sync-opentix` (seeded from `origin/opentix` when available)
+- All ticket files live in `.opentix/tickets/` and are pushed to `origin/opentix` from the sync branch using `HEAD:opentix` refspec
 - Auto-commits with prefix: `opentix: <message>`
 - Auto-push with merge-retry on conflict (never rebase, to avoid stuck worktree state)
 - **Default branch detection** (`detectDefaultBranch()`): checks origin/HEAD → local branches → remote tracking branches (origin/main, etc.). Never falls back to the current branch to prevent misidentifying a feature branch as default.
-- **Initialization check** (`isInitialized()`): tries both local ref (`main:path`) and remote tracking ref (`origin/main:path`) via git plumbing, so it works even when the default branch only exists as a remote tracking branch.
-- **Worktree branch verification**: `ensureWorktree()` verifies an existing worktree is on the expected sync branch (`opentix-sync-<defaultBranch>`) and recreates it if mismatched. If the default branch doesn't exist locally, creates from the remote tracking branch (`origin/main`).
+- **Initialization check** (`isInitialized()`): checks holder refs first (`origin/opentix:path`, `opentix:path`) and falls back to legacy default-branch refs for migration compatibility.
+- **Bootstrap/migration**: `ensureOpentixHolderBranch()` creates `opentix` from the default branch when missing, enabling smooth upgrades from legacy `main`-based storage.
+- **Worktree branch verification**: `ensureWorktree()` verifies an existing worktree is on the expected sync branch (`opentix-sync-opentix`) and recreates it if mismatched.
 - **Per-operation worktree revalidation**: file operations (`readFile`/`writeFile`/`deleteFile`/`listFiles`) and git mutations (`pull`/`commitAndPush`/`hasDirtyOpentixFiles`) call `ensureWorktree()` at the start of each operation so branch switches in the active workspace don't leave stale worktree handles.
 - **Conflict recovery**: `pull()` and `commitAndPush()` abort any incomplete merge/rebase state on failure via `abortIncompleteGitState()`, restoring the worktree to a clean, usable state
 - **Startup health check**: `ensureWorktree()` calls `abortIncompleteGitState()` on startup to recover from stale rebase/merge states left over from a previous session

@@ -8,7 +8,9 @@ order: 3
 
 ## Overview
 
-Opentix never creates files automatically. When you open a repository, the extension remains idle until you explicitly run **`Opentix: Initialize Project`** from the Command Palette. This launches an onboarding wizard that scaffolds the `.opentix/` directory in your repository. You only need to run this once per project — on subsequent opens Opentix detects the existing `.opentix/config.yml` and starts services automatically.
+Opentix never creates files automatically. When you open a repository, the extension remains idle until you explicitly run **`Opentix: Initialize Project`** from the Command Palette. This launches an onboarding wizard that scaffolds the `.opentix/` directory in your repository.
+
+On a new machine, init first checks whether an existing Opentix setup already exists on `origin/opentix`. If it does, Opentix skips the wizard and auto-joins by pulling that branch. You only run the full wizard when no Opentix holder branch exists yet.
 
 ## Two Paths
 
@@ -61,7 +63,7 @@ After initialization, your repository will have:
 └── AGENTS.md          # AI context documentation for coding agents
 ```
 
-All of these files live on the repository's default branch and are synced through Git.
+All of these files live on the dedicated `opentix` holder branch and are synced through Git.
 
 ## Next Steps
 

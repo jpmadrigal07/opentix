@@ -8,30 +8,26 @@ order: 1
 
 ## Activation
 
-When VS Code opens a workspace, Opentix checks whether the project has been explicitly initialized by looking for `.opentix/config.yml` (on the filesystem or via git plumbing on the default branch). If the config file is not found, the extension stays idle — no files are created and no background services are started. The status bar shows **"Opentix (init)"** and clicking it opens the [initialization wizard](/docs/getting-started/project-initialization).
+When VS Code opens a workspace, Opentix checks whether the project has been explicitly initialized by looking for `.opentix/config.yml` (on the filesystem or via git plumbing on the `opentix` holder branch). If the config file is not found, the extension stays idle — no files are created and no background services are started. The status bar shows **"Opentix (init)"** and clicking it opens the [initialization wizard](/docs/getting-started/project-initialization).
 
 Once a project has been initialized, the extension starts all background services (file watcher, sync, AI context) automatically on every subsequent open.
 
 ## Git Worktree Strategy
 
-Opentix stores all ticket data in the `.opentix/` directory on your repository's **default branch** (e.g., `main` or `master`). To avoid polluting your working branch with ticket file changes, Opentix uses a **git worktree**.
+Opentix stores all ticket data in the `.opentix/` directory on the dedicated **`opentix` holder branch**. To avoid polluting your working branch with ticket file changes, Opentix uses a **git worktree**.
 
 ### How It Works
 
-- If your workspace is on the **default branch**: Opentix reads and writes directly in the workspace root. No extra worktree is needed.
-- If your workspace is on a **feature branch**: Opentix creates `.opentix-worktree/` — a separate checkout of the default branch — and performs all ticket operations there.
+- If your workspace is on the **holder branch** (`opentix`): Opentix reads and writes directly in the workspace root. No extra worktree is needed.
+- If your workspace is on **any other branch**: Opentix creates `.opentix-worktree/` — a separate checkout synced from `opentix` — and performs all ticket operations there.
 
 This means your working tree, staged changes, and branch history are never affected by ticket operations. You can create, edit, and move tickets without any interference.
 
-### Default Branch Detection
+### Holder Branch & Bootstrap
 
-Opentix auto-detects the default branch using:
+Opentix uses a fixed holder branch name: `opentix`.
 
-```bash
-git symbolic-ref refs/remotes/origin/HEAD
-```
-
-This works with any branch name — `main`, `master`, `trunk`, `develop`, etc. You can also set it explicitly in `config.yml` via the `defaultBranch` field.
+On first setup/migration, if `origin/opentix` does not exist yet, Opentix seeds it once from your repository default branch and then treats `opentix` as the source of truth going forward.
 
 ## Data Flow
 
@@ -41,7 +37,7 @@ Here is how a typical ticket operation flows through the system:
 2. **Webview message** — The board sends a typed `postMessage` to the extension host
 3. **Service call** — The `KanbanViewProvider` routes the message to the appropriate service (e.g., `TicketService.updateTicket()`)
 4. **File write** — The service writes the updated Markdown file via `GitService`
-5. **Commit and push** — `GitService` auto-commits with the prefix `opentix:` and pushes to the remote
+5. **Commit and push** — `GitService` auto-commits with the prefix `opentix:` and pushes to `origin/opentix`
 6. **File watcher** — The file watcher detects the change and triggers an index rebuild
 7. **Board update** — The rebuilt index is sent back to the webview, which re-renders the board
 
@@ -77,7 +73,7 @@ Opentix keeps your team in sync through Git:
 
 - **Background pull** — Periodically pulls changes from the remote (default: every 60 seconds)
 - **Auto-push** — Pushes immediately after each commit (when push mode is `direct`)
-- **Conflict resolution** — Uses rebase with retry on conflict. Markdown ticket files are designed to minimize conflicts.
+- **Conflict resolution** — Uses merge-safe retry and stale-state abort on conflict. Markdown ticket files are designed to minimize conflicts.
 
 If no remote is configured, Opentix works in local-only mode — all features work, but changes are not synced.
 
